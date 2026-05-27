@@ -1,0 +1,12 @@
+{
+  "name": "forecasting-workforce-mock-mcp",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Mock MCP server for Forecasting workforce backend API v4 numeric-only contracts.",
+  "scripts": {
+    "dev": "node src/render-server.mjs",
+    "start": "node src/render-server.mjs",
+    "test": "node --test"
+  }
+}
