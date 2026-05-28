@@ -86,6 +86,32 @@ test("landing candidates use numeric-only v4 contract", async () => {
   assert.equal(Object.hasOwn(resourceUnderutilization.timeSeriesPreview[0], "targetValues"), false);
 });
 
+test("landing candidate limit defaults and caps at top five", async () => {
+  resetState();
+  const defaultResult = await callTool("get_workforce_recommendation_candidates", {});
+  assert.equal(defaultResult.filters.limit, 5);
+  assert.equal(defaultResult.items.length, 5);
+  assert.deepEqual(defaultResult.items.map((item) => item.rank), [1, 2, 3, 4, 5]);
+
+  const cappedResult = await callTool("get_workforce_recommendation_candidates", { limit: 9 });
+  assert.equal(cappedResult.filters.limit, 5);
+  assert.equal(cappedResult.items.length, 5);
+
+  for (const item of cappedResult.items) {
+    assert.equal(Object.hasOwn(item, "observation"), false);
+    assert.equal(Object.hasOwn(item, "severity"), false);
+    assert.equal(Object.hasOwn(item, "chartConfig"), false);
+    assert.equal(Object.hasOwn(item, "recommendationText"), false);
+  }
+});
+
+test("landing candidate minimum score can return no issue rows", async () => {
+  resetState();
+  const result = await callTool("get_workforce_recommendation_candidates", { minimumScore: 99 });
+  assert.equal(result.filters.minimumScore, 99);
+  assert.deepEqual(result.items, []);
+});
+
 test("metric values require capacity area and return time series", async () => {
   await assert.rejects(
     () => callTool("get_workforce_metric_values", {}),

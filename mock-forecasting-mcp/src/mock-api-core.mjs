@@ -78,6 +78,48 @@ const AREA_METRICS = {
       IDLE_HOURS: [290, 300, 310],
       IDLE_MINUTES_PER_RESOURCE: [36, 37, 38]
     }
+  },
+  GA: {
+    capacityArea: "GA",
+    capacityAreaName: "Georgia",
+    metrics: {
+      BOOKED_WORKLOAD_HOURS: values("HOURS", 4850, 4550, 4100, 4850, 4300),
+      AVAILABLE_RESOURCE_HOURS_PER_DAY: values("HOURS", 920, 925, 940, 920, 960),
+      AVERAGE_DAYS_TO_SCHEDULE: values("DAYS", 4.1, 3.5, 2.8, 4.1),
+      WITHIN_7_DAYS_PERCENT: values("PERCENT", 74, 78, 84, 74, 80),
+      HIGH_TRAVEL_TIME_ACTIVITY_COUNT: values("COUNT", 31, 27, 24, 31, 25),
+      OVERTIME_HOURS: values("HOURS", 330, 285, 230, 330, 260),
+      FORECAST_WORKLOAD_HOURS: values("HOURS", 21100, 20600, 20100, 21100, 20500),
+      SCHEDULING_RATIO: values("RATIO", 4.1, 3.5, 2.8, 4.1),
+      IDLE_HOURS: values("HOURS", 180, 168, 156, 180),
+      IDLE_MINUTES_PER_RESOURCE: values("MINUTES", 42, 40, 38, 42)
+    },
+    series: {
+      AVERAGE_DAYS_TO_SCHEDULE: [2.8, 3.5, 4.1],
+      IDLE_HOURS: [156, 168, 180],
+      IDLE_MINUTES_PER_RESOURCE: [38, 40, 42]
+    }
+  },
+  NY: {
+    capacityArea: "NY",
+    capacityAreaName: "New York",
+    metrics: {
+      BOOKED_WORKLOAD_HOURS: values("HOURS", 5450, 5200, 5000, 5450, 5100),
+      AVAILABLE_RESOURCE_HOURS_PER_DAY: values("HOURS", 1100, 1110, 1120, 1100, 1120),
+      AVERAGE_DAYS_TO_SCHEDULE: values("DAYS", 2.4, 2.2, 2.1, 2.4),
+      WITHIN_7_DAYS_PERCENT: values("PERCENT", 81, 83, 85, 81, 80),
+      HIGH_TRAVEL_TIME_ACTIVITY_COUNT: values("COUNT", 26, 24, 22, 26, 25),
+      OVERTIME_HOURS: values("HOURS", 240, 225, 210, 240, 240),
+      FORECAST_WORKLOAD_HOURS: values("HOURS", 22100, 21800, 21500, 22100, 21800),
+      SCHEDULING_RATIO: values("RATIO", 2.4, 2.2, 2.1, 2.4),
+      IDLE_HOURS: values("HOURS", 92, 84, 70, 92),
+      IDLE_MINUTES_PER_RESOURCE: values("MINUTES", 50, 46, 40, 50)
+    },
+    series: {
+      AVERAGE_DAYS_TO_SCHEDULE: [2.1, 2.2, 2.4],
+      IDLE_HOURS: [70, 84, 92],
+      IDLE_MINUTES_PER_RESOURCE: [40, 46, 50]
+    }
   }
 };
 
@@ -358,13 +400,20 @@ export async function handleHttpRequest(request, env = {}) {
 }
 
 function getRecommendationCandidates(args = {}) {
-  const limit = clamp(Number(args.limit || 3), 1, 10);
+  const limit = clamp(Number(args.limit || 5), 1, 5);
   const issueTypes = normalizeList(args.issueTypes || ["TIME_TO_START", "IDLE_TIME"]);
+  const minimumScore = Number(args.minimumScore || 50);
   const items = [
     buildHireCandidate(),
     buildMoveCandidate(),
-    buildTxHireCandidate()
-  ].filter((item) => !issueTypes.length || issueTypes.includes(item.issueType)).slice(0, limit);
+    buildTxHireCandidate(),
+    buildGaHireCandidate(),
+    buildNyMoveCandidate()
+  ]
+    .filter((item) => !issueTypes.length || issueTypes.includes(item.issueType))
+    .filter((item) => Number(item.score || 0) >= minimumScore)
+    .sort((left, right) => Number(left.rank || 0) - Number(right.rank || 0))
+    .slice(0, limit);
   return {
     generatedAt: BASE_NOW,
     dataVersion: DATA_VERSION,
@@ -372,7 +421,7 @@ function getRecommendationCandidates(args = {}) {
       issueTypes,
       lookbackMonths: Number(args.lookbackMonths || 3),
       forecastMonths: Number(args.forecastMonths || 6),
-      minimumScore: Number(args.minimumScore || 50),
+      minimumScore,
       limit
     },
     items
@@ -694,6 +743,59 @@ function buildTxHireCandidate() {
     detailRequest: {
       capacityArea: "TX",
       detailMetricCodes: ["AVERAGE_DAYS_TO_SCHEDULE", "FORECAST_WORKLOAD_HOURS", "HIGH_TRAVEL_TIME_ACTIVITY_COUNT", "SCHEDULING_RATIO"]
+    }
+  };
+}
+
+function buildGaHireCandidate() {
+  const area = AREA_METRICS.GA;
+  return {
+    recommendationId: "REC-GA-TTS-0001",
+    capacityArea: "GA",
+    capacityAreaName: "Georgia",
+    issueType: "TIME_TO_START",
+    rank: 4,
+    score: 78,
+    metricSnapshots: snapshotMetrics(area, ["AVERAGE_DAYS_TO_SCHEDULE", "FORECAST_WORKLOAD_HOURS", "HIGH_TRAVEL_TIME_ACTIVITY_COUNT"]),
+    calculationInputs: {
+      lookbackMonths: 3,
+      forecastMonths: 6,
+      bookedWorkloadIncreaseHours: 750,
+      availableResourceHoursPerDay: 920,
+      currentSchedulingRatio: 4.1
+    },
+    timeSeriesPreview: [
+      seriesPreview(area, "AVERAGE_DAYS_TO_SCHEDULE", [2.8, 3.5, 4.1])
+    ],
+    detailRequest: {
+      capacityArea: "GA",
+      detailMetricCodes: ["AVERAGE_DAYS_TO_SCHEDULE", "FORECAST_WORKLOAD_HOURS", "HIGH_TRAVEL_TIME_ACTIVITY_COUNT", "SCHEDULING_RATIO"]
+    }
+  };
+}
+
+function buildNyMoveCandidate() {
+  const area = AREA_METRICS.NY;
+  return {
+    recommendationId: "REC-NY-MOVE-0001",
+    capacityArea: "NY",
+    capacityAreaName: "New York",
+    issueType: "IDLE_TIME",
+    rank: 5,
+    score: 72,
+    metricSnapshots: snapshotMetrics(area, ["IDLE_HOURS", "IDLE_MINUTES_PER_RESOURCE"]),
+    calculationInputs: {
+      lookbackMonths: 3,
+      idleHoursPerWeek: 92,
+      idleResourceCount: 9,
+      movableWeeklyCapacityHours: 96
+    },
+    timeSeriesPreview: [
+      seriesPreview(area, "IDLE_HOURS", [70, 84, 92])
+    ],
+    detailRequest: {
+      capacityArea: "NY",
+      detailMetricCodes: ["IDLE_HOURS", "IDLE_MINUTES_PER_RESOURCE", "FORECAST_WORKLOAD_HOURS"]
     }
   };
 }

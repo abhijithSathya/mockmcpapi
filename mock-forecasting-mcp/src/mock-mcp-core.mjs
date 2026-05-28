@@ -249,7 +249,7 @@ const TOOL_METADATA = {
     inputSchema: {
       type: "object",
       properties: {
-        limit: { type: "integer", description: "Maximum candidate count." },
+        limit: { type: "integer", description: "Maximum candidate count, capped at 5." },
         issueTypes: arrayOrString("Issue type codes such as TIME_TO_START or IDLE_TIME."),
         lookbackMonths: { type: "integer" },
         forecastMonths: { type: "integer" },
