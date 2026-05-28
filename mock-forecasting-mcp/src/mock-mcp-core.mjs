@@ -308,11 +308,11 @@ const TOOL_METADATA = {
     }
   },
   get_idle_time_resource_move_options: {
-    description: "Return numeric resource move option data for an idle-time recommendation.",
+    description: "Return numeric resource move option data for a resource-underutilization recommendation.",
     inputSchema: moveSchema({ limit: { type: "integer" } })
   },
   simulate_idle_time_resource_move_impact: {
-    description: "Simulate numeric source and target impact for selected idle-time move options.",
+    description: "Simulate numeric source resource-underutilization and target-area impact for selected move options.",
     inputSchema: moveSchema({
       selectedOptionIds: arrayOrString("Selected move option IDs such as CA-MOVE-001."),
       optionIds: arrayOrString("Alternative selected move option IDs."),

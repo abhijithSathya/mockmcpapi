@@ -34,12 +34,12 @@ const endpointSummaries = [
   {
     path: "/forecasting/workforce/resource-move-options",
     operationId: "get_idle_time_resource_move_options",
-    summary: "Returns numeric resource move options for an idle-time recommendation."
+    summary: "Returns numeric resource move options for a resource-underutilization recommendation."
   },
   {
     path: "/forecasting/workforce/resource-move-simulations",
     operationId: "simulate_idle_time_resource_move_impact",
-    summary: "Simulates numeric source and target impact for selected resource moves."
+    summary: "Simulates numeric source resource-underutilization and target-area impact for selected resource moves."
   },
   {
     path: "/forecasting/workforce/resource-move-batches",
@@ -203,4 +203,3 @@ export function getOpenApiSpec() {
     }
   };
 }
-

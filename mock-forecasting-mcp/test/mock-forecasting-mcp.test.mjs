@@ -94,12 +94,18 @@ test("metric values require capacity area and return time series", async () => {
 
   const result = await callTool("get_workforce_metric_values", {
     capacityArea: "CA",
-    metricCodes: ["IDLE_HOURS", "IDLE_MINUTES_PER_RESOURCE"],
+    metricCodes: ["AVERAGE_DAYS_TO_SCHEDULE", "IDLE_HOURS", "IDLE_MINUTES_PER_RESOURCE"],
     includeTimeSeries: true
   });
   assert.equal(result.areaMetrics[0].capacityArea, "CA");
-  assert.equal(result.areaMetrics[0].metrics.length, 2);
+  assert.equal(result.areaMetrics[0].metrics.length, 3);
   assert.ok(result.timeSeries.length > 0);
+  for (const metric of result.areaMetrics[0].metrics) {
+    assert.equal(Object.hasOwn(metric, "targetValue"), false);
+  }
+  for (const series of result.timeSeries) {
+    assert.equal(Object.hasOwn(series, "targetValues"), false);
+  }
 });
 
 test("hire proposal save persists and search excludes generated prose", async () => {
