@@ -70,6 +70,20 @@ test("landing candidates use numeric-only v4 contract", async () => {
   assert.ok(result.items[0].metricSnapshots.length > 0);
   assert.equal(Object.hasOwn(result.items[0], "observation"), false);
   assert.equal(Object.hasOwn(result.items[0], "severity"), false);
+  const activityStartMetric = result.items[0].metricSnapshots.find((metric) => metric.metricCode === "AVERAGE_DAYS_TO_SCHEDULE");
+  assert.equal(activityStartMetric.lookbackStartValue, 3);
+  assert.equal(activityStartMetric.currentValue, 6);
+  assert.equal(Object.hasOwn(activityStartMetric, "targetValue"), false);
+  assert.deepEqual(result.items[0].timeSeriesPreview[0].actualValues, [3, 4.5, 6]);
+  assert.equal(Object.hasOwn(result.items[0].timeSeriesPreview[0], "targetValues"), false);
+
+  const resourceUnderutilization = result.items.find((item) => item.issueType === "IDLE_TIME");
+  const underutilizationMetric = resourceUnderutilization.metricSnapshots.find((metric) => metric.metricCode === "IDLE_HOURS");
+  assert.equal(underutilizationMetric.lookbackStartValue, 53);
+  assert.equal(underutilizationMetric.currentValue, 65);
+  assert.equal(Object.hasOwn(underutilizationMetric, "targetValue"), false);
+  assert.deepEqual(resourceUnderutilization.timeSeriesPreview[0].actualValues, [53, 60, 65]);
+  assert.equal(Object.hasOwn(resourceUnderutilization.timeSeriesPreview[0], "targetValues"), false);
 });
 
 test("metric values require capacity area and return time series", async () => {

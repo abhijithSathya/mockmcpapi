@@ -6,6 +6,12 @@ const BASE_NOW = "2026-05-26T10:30:00Z";
 const DATA_VERSION = "forecasting-27a-mock-001";
 const PERIODS = ["CURRENT", "PLUS_1_MONTH", "PLUS_2_MONTH", "PLUS_3_MONTH", "PLUS_4_MONTH", "PLUS_5_MONTH", "PLUS_6_MONTH"];
 const LOOKBACK_PERIODS = ["M_MINUS_3", "M_MINUS_2", "M_MINUS_1", "CURRENT"];
+const NO_TARGET_METRIC_CODES = new Set([
+  "AVERAGE_DAYS_TO_SCHEDULE",
+  "SCHEDULING_RATIO",
+  "IDLE_HOURS",
+  "IDLE_MINUTES_PER_RESOURCE"
+]);
 
 let state = createSeedState();
 
@@ -16,17 +22,17 @@ const AREA_METRICS = {
     metrics: {
       BOOKED_WORKLOAD_HOURS: values("HOURS", 6300, 5100, 3000, 6300, 3000),
       AVAILABLE_RESOURCE_HOURS_PER_DAY: values("HOURS", 1000, 1000, 1000, 1000, 1040),
-      AVERAGE_DAYS_TO_SCHEDULE: values("DAYS", 3.6, 2.9, 2.4, 3.6, 2.4),
+      AVERAGE_DAYS_TO_SCHEDULE: values("DAYS", 6, 4.5, 3, 6),
       WITHIN_7_DAYS_PERCENT: values("PERCENT", 72, 76, 82, 72, 80),
       HIGH_TRAVEL_TIME_ACTIVITY_COUNT: values("COUNT", 42, 36, 28, 42, 25),
       OVERTIME_HOURS: values("HOURS", 480, 420, 300, 480, 300),
       FORECAST_WORKLOAD_HOURS: values("HOURS", 23200, 23100, 23000, 23200, 22000),
-      SCHEDULING_RATIO: values("RATIO", 3.6, 2.9, 2.4, 3.6, 2.4),
-      IDLE_HOURS: values("HOURS", 260, 240, 220, 260, 300),
-      IDLE_MINUTES_PER_RESOURCE: values("MINUTES", 33, 31, 29, 33, 45)
+      SCHEDULING_RATIO: values("RATIO", 6, 4.5, 3, 6),
+      IDLE_HOURS: values("HOURS", 260, 240, 220, 260),
+      IDLE_MINUTES_PER_RESOURCE: values("MINUTES", 33, 31, 29, 33)
     },
     series: {
-      AVERAGE_DAYS_TO_SCHEDULE: [2.4, 2.9, 3.6],
+      AVERAGE_DAYS_TO_SCHEDULE: [3, 4.5, 6],
       IDLE_HOURS: [220, 240, 260],
       IDLE_MINUTES_PER_RESOURCE: [29, 31, 33]
     }
@@ -37,18 +43,18 @@ const AREA_METRICS = {
     metrics: {
       BOOKED_WORKLOAD_HOURS: values("HOURS", 4100, 4050, 3900, 4100, 4300),
       AVAILABLE_RESOURCE_HOURS_PER_DAY: values("HOURS", 1180, 1190, 1200, 1180, 1150),
-      AVERAGE_DAYS_TO_SCHEDULE: values("DAYS", 1.8, 1.8, 1.7, 1.8, 2.2),
+      AVERAGE_DAYS_TO_SCHEDULE: values("DAYS", 1.8, 1.8, 1.7, 1.8),
       WITHIN_7_DAYS_PERCENT: values("PERCENT", 88, 89, 90, 88, 80),
       HIGH_TRAVEL_TIME_ACTIVITY_COUNT: values("COUNT", 21, 19, 18, 21, 25),
       OVERTIME_HOURS: values("HOURS", 160, 155, 150, 160, 250),
       FORECAST_WORKLOAD_HOURS: values("HOURS", 18900, 18700, 18500, 18900, 19000),
-      SCHEDULING_RATIO: values("RATIO", 1.8, 1.8, 1.7, 1.8, 2.2),
-      IDLE_HOURS: values("HOURS", 760, 690, 520, 760, 400),
-      IDLE_MINUTES_PER_RESOURCE: values("MINUTES", 64, 58, 52, 64, 45)
+      SCHEDULING_RATIO: values("RATIO", 1.8, 1.8, 1.7, 1.8),
+      IDLE_HOURS: values("HOURS", 65, 60, 53, 65),
+      IDLE_MINUTES_PER_RESOURCE: values("MINUTES", 64, 58, 52, 64)
     },
     series: {
       AVERAGE_DAYS_TO_SCHEDULE: [1.7, 1.8, 1.8],
-      IDLE_HOURS: [520, 690, 760],
+      IDLE_HOURS: [53, 60, 65],
       IDLE_MINUTES_PER_RESOURCE: [52, 58, 64]
     }
   },
@@ -58,14 +64,14 @@ const AREA_METRICS = {
     metrics: {
       BOOKED_WORKLOAD_HOURS: values("HOURS", 5200, 4700, 4300, 5200, 4200),
       AVAILABLE_RESOURCE_HOURS_PER_DAY: values("HOURS", 960, 970, 980, 960, 1000),
-      AVERAGE_DAYS_TO_SCHEDULE: values("DAYS", 2.9, 2.6, 2.3, 2.9, 2.4),
+      AVERAGE_DAYS_TO_SCHEDULE: values("DAYS", 2.9, 2.6, 2.3, 2.9),
       WITHIN_7_DAYS_PERCENT: values("PERCENT", 78, 80, 83, 78, 80),
       HIGH_TRAVEL_TIME_ACTIVITY_COUNT: values("COUNT", 35, 31, 29, 35, 25),
       OVERTIME_HOURS: values("HOURS", 360, 330, 300, 360, 300),
       FORECAST_WORKLOAD_HOURS: values("HOURS", 24400, 23100, 22000, 24400, 22000),
-      SCHEDULING_RATIO: values("RATIO", 2.9, 2.6, 2.3, 2.9, 2.4),
-      IDLE_HOURS: values("HOURS", 310, 300, 290, 310, 400),
-      IDLE_MINUTES_PER_RESOURCE: values("MINUTES", 38, 37, 36, 38, 45)
+      SCHEDULING_RATIO: values("RATIO", 2.9, 2.6, 2.3, 2.9),
+      IDLE_HOURS: values("HOURS", 310, 300, 290, 310),
+      IDLE_MINUTES_PER_RESOURCE: values("MINUTES", 38, 37, 36, 38)
     },
     series: {
       AVERAGE_DAYS_TO_SCHEDULE: [2.3, 2.6, 2.9],
@@ -435,7 +441,6 @@ function simulateHireImpact(args = {}) {
     selectedResourceCount,
     currentAverageDaysToSchedule: 3.6,
     projectedAverageDaysToSchedule,
-    targetAverageDaysToSchedule: 2.4,
     averageDaysToScheduleDelta: Number((projectedAverageDaysToSchedule - 3.6).toFixed(1)),
     currentWithinSevenDaysPercent: 72,
     projectedWithinSevenDaysPercent,
@@ -467,7 +472,6 @@ function saveHireProposal(args = {}) {
     proposedResourceCount: simulation.selectedResourceCount,
     projectedAverageDaysToSchedule: simulation.projectedAverageDaysToSchedule,
     currentAverageDaysToSchedule: simulation.currentAverageDaysToSchedule,
-    targetAverageDaysToSchedule: simulation.targetAverageDaysToSchedule,
     projectedWithinSevenDaysPercent: simulation.projectedWithinSevenDaysPercent,
     currentWithinSevenDaysPercent: simulation.currentWithinSevenDaysPercent,
     addedWeeklyCapacityHours: simulation.addedWeeklyCapacityHours,
@@ -524,8 +528,7 @@ function getMoveOptions(args = {}) {
       sourceIdleResourceCount: 18,
       sourceAvailableWeeklyCapacityHours: 720,
       sourceMovableWeeklyCapacityHours: 220,
-      currentIdleMinutesPerResource: 64,
-      targetIdleMinutesPerResource: 45
+      currentIdleMinutesPerResource: 64
     },
     idleSkillGroups: [
       {
@@ -572,7 +575,6 @@ function simulateMoveImpact(args = {}) {
     selectedResourceCount: selectedResourceIds.length,
     currentIdleMinutesPerResource: 64,
     projectedIdleMinutesPerResource,
-    targetIdleMinutesPerResource: 45,
     idleMinutesDelta: projectedIdleMinutesPerResource - 64,
     totalWeeklyCapacityHoursMoved: selectedOptions.reduce((sum, option) => sum + option.weeklyCapacityHoursMovable, 0),
     totalTargetNeedCoveredHours: selectedOptions.reduce((sum, option) => sum + option.targetNeedCoverageHours, 0),
@@ -634,7 +636,7 @@ function buildHireCandidate() {
       currentSchedulingRatio: 3.6
     },
     timeSeriesPreview: [
-      seriesPreview(area, "AVERAGE_DAYS_TO_SCHEDULE", [2.4, 2.9, 3.6], 2.4)
+      seriesPreview(area, "AVERAGE_DAYS_TO_SCHEDULE", [3, 4.5, 6])
     ],
     detailRequest: {
       capacityArea: "FL",
@@ -660,7 +662,7 @@ function buildMoveCandidate() {
       movableWeeklyCapacityHours: 220
     },
     timeSeriesPreview: [
-      seriesPreview(area, "IDLE_MINUTES_PER_RESOURCE", [52, 58, 64], 45)
+      seriesPreview(area, "IDLE_HOURS", [53, 60, 65])
     ],
     detailRequest: {
       capacityArea: "CA",
@@ -699,27 +701,36 @@ function buildTxHireCandidate() {
 function snapshotMetrics(area, metricCodes) {
   return metricCodes.map((metricCode) => {
     const metric = area.metrics[metricCode];
-    return {
+    const snapshot = {
       metricCode,
       unitCode: metric.unitCode,
       currentValue: metric.currentValue,
       previousValue: metric.previousValue,
-      targetValue: metric.targetValue,
-      absoluteGapToTarget: Number((metric.currentValue - metric.targetValue).toFixed(2)),
-      percentGapToTarget: metric.targetValue ? Number((((metric.currentValue - metric.targetValue) / metric.targetValue) * 100).toFixed(1)) : 0
+      lookbackStartValue: metric.lookbackStartValue,
+      lookbackEndValue: metric.lookbackEndValue,
+      lookbackPointCount: metric.lookbackPointCount
     };
+    if (!NO_TARGET_METRIC_CODES.has(metricCode) && metric.targetValue !== undefined) {
+      snapshot.targetValue = metric.targetValue;
+      snapshot.absoluteGapToTarget = Number((metric.currentValue - metric.targetValue).toFixed(2));
+      snapshot.percentGapToTarget = metric.targetValue ? Number((((metric.currentValue - metric.targetValue) / metric.targetValue) * 100).toFixed(1)) : 0;
+    }
+    return snapshot;
   });
 }
 
 function seriesPreview(area, metricCode, actualValues, targetValue) {
-  return {
+  const preview = {
     seriesCode: `${metricCode}_BY_MONTH`,
     metricCode,
     unitCode: area.metrics[metricCode].unitCode,
     xValues: LOOKBACK_PERIODS.slice(1),
-    actualValues,
-    targetValues: actualValues.map(() => targetValue)
+    actualValues
   };
+  if (!NO_TARGET_METRIC_CODES.has(metricCode) && targetValue !== undefined) {
+    preview.targetValues = actualValues.map(() => targetValue);
+  }
+  return preview;
 }
 
 function buildMetricTimeSeries(area, metricCodes) {
@@ -727,22 +738,24 @@ function buildMetricTimeSeries(area, metricCodes) {
     .filter((code) => area.metrics[code])
     .map((code) => {
       const actualValues = area.series[code] || [area.metrics[code].lookbackStartValue, area.metrics[code].previousValue, area.metrics[code].currentValue];
-      return {
+      const series = {
         seriesCode: `${code}_BY_MONTH`,
         metricCode: code,
         unitCode: area.metrics[code].unitCode,
         capacityArea: area.capacityArea,
         xValues: LOOKBACK_PERIODS.slice(-actualValues.length),
-        actualValues,
-        targetValues: actualValues.map(() => area.metrics[code].targetValue)
+        actualValues
       };
+      if (!NO_TARGET_METRIC_CODES.has(code) && area.metrics[code].targetValue !== undefined) {
+        series.targetValues = actualValues.map(() => area.metrics[code].targetValue);
+      }
+      return series;
     });
 }
 
 function hireBaseline() {
   return {
     currentAverageDaysToSchedule: 3.6,
-    targetAverageDaysToSchedule: 2.4,
     currentWithinSevenDaysPercent: 72,
     targetWithinSevenDaysPercent: 80,
     currentBookedWorkloadHours: 6300,
@@ -800,7 +813,6 @@ function buildHireForecastSeries(resourceCountAdded, projectedAverageDaysToSched
     periodCodes: PERIODS,
     noActionAverageDaysToSchedule: noAction,
     selectedOptionsAverageDaysToSchedule: selected,
-    targetAverageDaysToSchedule: PERIODS.map(() => 2.4),
     selectedOptionsWithinSevenDaysPercent: PERIODS.map((_, index) => Math.min(projectedWithinSevenDaysPercent, 72 + index * resourceCountAdded))
   };
 }
@@ -829,7 +841,6 @@ function buildMoveForecastSeries(selectedOptions, projectedIdleMinutesPerResourc
     periodCodes: PERIODS,
     sourceNoActionIdleMinutesPerResource: [64, 66, 68, 69, 69, 70, 70],
     sourceSelectedMovesIdleMinutesPerResource: [64, 61, 58, projectedIdleMinutesPerResource, projectedIdleMinutesPerResource, projectedIdleMinutesPerResource, projectedIdleMinutesPerResource],
-    sourceTargetIdleMinutesPerResource: PERIODS.map(() => 45),
     targetNoActionGapHours: [58, 52, 50, 48, 46, 44, 42],
     targetSelectedMovesGapHours: [58, Math.max(0, 52 - totalCovered), Math.max(0, 50 - totalCovered), Math.max(0, 48 - totalCovered), Math.max(0, 46 - totalCovered), Math.max(0, 44 - totalCovered), Math.max(0, 42 - totalCovered)],
     targetAcceptableGapHours: PERIODS.map(() => 20)
@@ -853,7 +864,9 @@ function proposalRef(proposal) {
 }
 
 function values(unitCode, currentValue, previousValue, lookbackStartValue, lookbackEndValue, targetValue) {
-  return { unitCode, currentValue, previousValue, lookbackStartValue, lookbackEndValue, targetValue, lookbackPointCount: 4 };
+  const metric = { unitCode, currentValue, previousValue, lookbackStartValue, lookbackEndValue, lookbackPointCount: 4 };
+  if (targetValue !== undefined) metric.targetValue = targetValue;
+  return metric;
 }
 
 function requireArea(value) {
@@ -897,7 +910,6 @@ function createSeedState() {
         proposedResourceCount: 2,
         projectedAverageDaysToSchedule: 2.7,
         currentAverageDaysToSchedule: 3.6,
-        targetAverageDaysToSchedule: 2.4,
         projectedWithinSevenDaysPercent: 80,
         currentWithinSevenDaysPercent: 72,
         addedWeeklyCapacityHours: 62,
