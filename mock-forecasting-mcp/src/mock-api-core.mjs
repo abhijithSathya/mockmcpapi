@@ -452,59 +452,63 @@ function getMetricValues(args = {}) {
 }
 
 function getHireOptions(args = {}) {
-  requireHire(args);
+  const area = requireHire(args);
   const limit = clamp(Number(args.limit || 3), 1, 3);
+  const options = hireOptionsForArea(area);
   return {
     generatedAt: BASE_NOW,
     dataVersion: DATA_VERSION,
-    recommendationId: args.recommendationId || "REC-FL-TTS-0001",
-    capacityArea: "FL",
-    capacityAreaName: "Florida",
+    recommendationId: args.recommendationId || recommendationIdFor(area.capacityArea, "TIME_TO_START"),
+    capacityArea: area.capacityArea,
+    capacityAreaName: area.capacityAreaName,
     issueType: "TIME_TO_START",
-    baseline: hireBaseline(),
-    workloadForecast: buildHireWorkloadForecast(0),
-    hireCountScenarios: [1, 2, 3].map(buildHireCountScenario),
-    options: HIRE_OPTIONS.slice(0, limit).map(clone),
+    baseline: hireBaseline(area),
+    workloadForecast: buildHireWorkloadForecast(area, 0),
+    hireCountScenarios: [1, 2, 3].map((count) => buildHireCountScenario(area, count)),
+    options: options.slice(0, limit).map(clone),
     existingProposalRefs: args.includeExistingProposals === false ? [] : state.hireProposals.map(proposalRef),
-    versionToken: "hire-options-FL-v1"
+    versionToken: `hire-options-${area.capacityArea}-v1`
   };
 }
 
 function simulateHireImpact(args = {}) {
-  requireHire(args);
-  const selectedOptionIds = normalizeOptionIds(args.selectedOptionIds || args.optionIds || args.selectedResourceIds, "FL-HIRE").filter((id) => HIRE_OPTIONS.some((option) => option.optionId === id));
-  const selectedOptions = selectedOptionIds.map((id) => HIRE_OPTIONS.find((option) => option.optionId === id));
+  const area = requireHire(args);
+  const options = hireOptionsForArea(area);
+  const baseline = hireBaseline(area);
+  const selectedOptionIds = normalizeOptionIds(args.selectedOptionIds || args.optionIds || args.selectedResourceIds, `${area.capacityArea}-HIRE`).filter((id) => options.some((option) => option.optionId === id));
+  const selectedOptions = selectedOptionIds.map((id) => options.find((option) => option.optionId === id));
   const selectedResourceCount = selectedResourceCountFor(args, selectedOptions);
   const addedWeeklyCapacityHours = selectedOptions.reduce((sum, option) => sum + option.weeklyCapacityHoursPerResource * resourceCountForOption(args, option), 0);
   const addedMonthlyCapacityHours = Math.round(addedWeeklyCapacityHours * 22);
-  const projectedAverageDaysToSchedule = Math.max(2.4, Number((3.6 - selectedResourceCount * 0.45).toFixed(1)));
-  const projectedWithinSevenDaysPercent = Math.min(86, 72 + selectedResourceCount * 4);
+  const minimumAverageDays = Math.max(1.8, Number((baseline.currentAverageDaysToSchedule * 0.45).toFixed(1)));
+  const projectedAverageDaysToSchedule = Math.max(minimumAverageDays, Number((baseline.currentAverageDaysToSchedule - selectedResourceCount * 0.45).toFixed(1)));
+  const projectedWithinSevenDaysPercent = Math.min(90, baseline.currentWithinSevenDaysPercent + selectedResourceCount * 4);
   return {
     generatedAt: BASE_NOW,
-    simulationId: "SIM-HIRE-FL-0001",
+    simulationId: `SIM-HIRE-${area.capacityArea}-0001`,
     dataVersion: DATA_VERSION,
-    recommendationId: args.recommendationId || "REC-FL-TTS-0001",
-    capacityArea: "FL",
+    recommendationId: args.recommendationId || recommendationIdFor(area.capacityArea, "TIME_TO_START"),
+    capacityArea: area.capacityArea,
     issueType: "TIME_TO_START",
     selectedOptionIds,
     selectedResourceCount,
-    currentAverageDaysToSchedule: 3.6,
+    currentAverageDaysToSchedule: baseline.currentAverageDaysToSchedule,
     projectedAverageDaysToSchedule,
-    averageDaysToScheduleDelta: Number((projectedAverageDaysToSchedule - 3.6).toFixed(1)),
-    currentWithinSevenDaysPercent: 72,
+    averageDaysToScheduleDelta: Number((projectedAverageDaysToSchedule - baseline.currentAverageDaysToSchedule).toFixed(1)),
+    currentWithinSevenDaysPercent: baseline.currentWithinSevenDaysPercent,
     projectedWithinSevenDaysPercent,
-    targetWithinSevenDaysPercent: 80,
-    withinSevenDaysDeltaPoints: projectedWithinSevenDaysPercent - 72,
+    targetWithinSevenDaysPercent: baseline.targetWithinSevenDaysPercent,
+    withinSevenDaysDeltaPoints: projectedWithinSevenDaysPercent - baseline.currentWithinSevenDaysPercent,
     addedWeeklyCapacityHours,
     addedMonthlyCapacityHours,
-    monthlyProjection: buildHireWorkloadForecast(selectedResourceCount),
-    forecastSeries: buildHireForecastSeries(selectedResourceCount, projectedAverageDaysToSchedule, projectedWithinSevenDaysPercent),
-    versionToken: "hire-sim-FL-0001-v1"
+    monthlyProjection: buildHireWorkloadForecast(area, selectedResourceCount),
+    forecastSeries: buildHireForecastSeries(area, selectedResourceCount, projectedAverageDaysToSchedule, projectedWithinSevenDaysPercent),
+    versionToken: `hire-sim-${area.capacityArea}-0001-v1`
   };
 }
 
 function saveHireProposal(args = {}) {
-  requireHire(args);
+  const area = requireHire(args);
   const simulation = simulateHireImpact(args);
   const proposal = {
     proposalId: `HIRE-PROP-${String(state.hireProposals.length + 1).padStart(4, "0")}`,
@@ -515,7 +519,7 @@ function saveHireProposal(args = {}) {
     createdByDisplayName: args.userContext?.userName || "Planner 001",
     recommendationId: simulation.recommendationId,
     simulationId: args.simulationId || simulation.simulationId,
-    capacityArea: "FL",
+    capacityArea: area.capacityArea,
     issueType: "TIME_TO_START",
     selectedOptionIds: simulation.selectedOptionIds,
     proposedResourceCount: simulation.selectedResourceCount,
@@ -562,79 +566,56 @@ function searchHireProposals(args = {}) {
 }
 
 function getMoveOptions(args = {}) {
-  requireMove(args);
+  const area = requireMove(args);
   const limit = clamp(Number(args.limit || 3), 1, 3);
+  const options = moveOptionsForArea(area);
   return {
     generatedAt: BASE_NOW,
     dataVersion: DATA_VERSION,
-    recommendationId: args.recommendationId || "REC-CA-MOVE-0001",
-    capacityArea: "CA",
-    capacityAreaName: "California",
+    recommendationId: args.recommendationId || recommendationIdFor(area.capacityArea, "IDLE_TIME"),
+    capacityArea: area.capacityArea,
+    capacityAreaName: area.capacityAreaName,
     issueType: "IDLE_TIME",
-    baseline: {
-      sourceIdleHoursLookback: 760,
-      sourceIdleHoursPerWeek: 190,
-      sourceIdleResourceCount: 18,
-      sourceAvailableWeeklyCapacityHours: 720,
-      sourceMovableWeeklyCapacityHours: 220,
-      currentIdleMinutesPerResource: 64
-    },
-    idleSkillGroups: [
-      {
-        skillGroupId: "SKILLGROUP-001",
-        workSkillCodes: ["APPLIANCE_REPAIR", "PREVENTIVE_MAINTENANCE"],
-        workSkillNames: ["Appliance Repair", "Preventive Maintenance"],
-        resourceCount: 12,
-        idleHoursPerWeek: 120,
-        minimumIndividualIdleHoursPerWeek: 8,
-        nonOverlappingGroupSequence: 1
-      },
-      {
-        skillGroupId: "SKILLGROUP-002",
-        workSkillCodes: ["HVAC_SERVICE", "ELECTRICAL_DIAGNOSTICS"],
-        workSkillNames: ["HVAC Service", "Electrical Diagnostics"],
-        resourceCount: 6,
-        idleHoursPerWeek: 70,
-        minimumIndividualIdleHoursPerWeek: 7,
-        nonOverlappingGroupSequence: 2
-      }
-    ],
-    options: MOVE_OPTIONS.slice(0, limit).map(clone),
-    versionToken: "move-options-CA-v1"
+    baseline: moveBaseline(area),
+    idleSkillGroups: moveSkillGroups(area),
+    options: options.slice(0, limit).map(clone),
+    versionToken: `move-options-${area.capacityArea}-v1`
   };
 }
 
 function simulateMoveImpact(args = {}) {
-  requireMove(args);
-  const selectedOptionIds = normalizeOptionIds(args.selectedOptionIds || args.optionIds || args.selectedMoveOptionIds || args.selectedResourceIds, "CA-MOVE").filter((id) => MOVE_OPTIONS.some((option) => option.optionId === id));
-  const selectedOptions = selectedOptionIds.map((id) => MOVE_OPTIONS.find((option) => option.optionId === id));
+  const area = requireMove(args);
+  const options = moveOptionsForArea(area);
+  const baseline = moveBaseline(area);
+  const selectedOptionIds = normalizeOptionIds(args.selectedOptionIds || args.optionIds || args.selectedMoveOptionIds || args.selectedResourceIds, `${area.capacityArea}-MOVE`).filter((id) => options.some((option) => option.optionId === id));
+  const selectedOptions = selectedOptionIds.map((id) => options.find((option) => option.optionId === id));
   const selectedResourceIds = selectedOptions.map((option) => option.resourceId);
   const idleDelta = selectedOptions.reduce((sum, option) => sum + option.projectedSourceIdleMinutesReduction, 0);
-  const projectedIdleMinutesPerResource = Math.max(42, 64 - idleDelta);
+  const projectedIdleMinutesPerResource = Math.max(34, baseline.currentIdleMinutesPerResource - idleDelta);
   const targetAreaImpacts = buildTargetAreaImpacts(selectedOptions);
   return {
     generatedAt: BASE_NOW,
-    simulationId: "SIM-MOVE-CA-0001",
+    simulationId: `SIM-MOVE-${area.capacityArea}-0001`,
     dataVersion: DATA_VERSION,
-    recommendationId: args.recommendationId || "REC-CA-MOVE-0001",
-    capacityArea: "CA",
+    recommendationId: args.recommendationId || recommendationIdFor(area.capacityArea, "IDLE_TIME"),
+    capacityArea: area.capacityArea,
     issueType: "IDLE_TIME",
     selectedOptionIds,
     selectedResourceIds,
     selectedResourceCount: selectedResourceIds.length,
-    currentIdleMinutesPerResource: 64,
+    currentIdleMinutesPerResource: baseline.currentIdleMinutesPerResource,
     projectedIdleMinutesPerResource,
-    idleMinutesDelta: projectedIdleMinutesPerResource - 64,
+    idleMinutesDelta: projectedIdleMinutesPerResource - baseline.currentIdleMinutesPerResource,
     totalWeeklyCapacityHoursMoved: selectedOptions.reduce((sum, option) => sum + option.weeklyCapacityHoursMovable, 0),
     totalTargetNeedCoveredHours: selectedOptions.reduce((sum, option) => sum + option.targetNeedCoverageHours, 0),
     targetAreaImpacts,
-    forecastSeries: buildMoveForecastSeries(selectedOptions, projectedIdleMinutesPerResource, targetAreaImpacts),
-    versionToken: "move-sim-CA-0001-v1"
+    forecastSeries: buildMoveForecastSeries(area, selectedOptions, projectedIdleMinutesPerResource, targetAreaImpacts),
+    versionToken: `move-sim-${area.capacityArea}-0001-v1`
   };
 }
 
 function createMoveBatch(args = {}) {
-  requireMove(args);
+  const area = requireMove(args);
   const simulation = simulateMoveImpact(args);
   const batch = {
     movementBatchId: `MOVE-BATCH-${String(state.resourceMoveBatches.length + 1).padStart(4, "0")}`,
@@ -655,12 +636,12 @@ function createMoveBatch(args = {}) {
     createdByDisplayName: batch.createdByDisplayName,
     recommendationId: batch.recommendationId,
     simulationId: args.simulationId || batch.simulationId,
-    sourceArea: "CA",
+    sourceArea: area.capacityArea,
     issueType: "IDLE_TIME",
     selectedOptionIds: batch.selectedOptionIds,
     selectedResourceIds: batch.selectedResourceIds,
     movedOrRequestedCount: batch.selectedResourceCount,
-    targetAreas: [...new Set(MOVE_OPTIONS.filter((option) => batch.selectedOptionIds.includes(option.optionId)).map((option) => option.targetArea))],
+    targetAreas: [...new Set(moveOptionsForArea(area).filter((option) => batch.selectedOptionIds.includes(option.optionId)).map((option) => option.targetArea))],
     projectedIdleMinutesPerResource: batch.projectedIdleMinutesPerResource,
     totalTargetNeedCoveredHours: batch.totalTargetNeedCoveredHours,
     versionToken: `${batch.movementBatchId}-v1`
@@ -855,41 +836,139 @@ function buildMetricTimeSeries(area, metricCodes) {
     });
 }
 
-function hireBaseline() {
+function hireOptionsForArea(area) {
+  const code = area.capacityArea;
+  if (code === "FL") return HIRE_OPTIONS;
+  const areaOffsets = {
+    TX: {
+      locations: [
+        ["Austin contractor pod", "Austin, TX 78701", 30.2672, -97.7431],
+        ["Dallas contractor pod", "Dallas, TX 75201", 32.7767, -96.7970],
+        ["Houston contractor pod", "Houston, TX 77002", 29.7604, -95.3698]
+      ],
+      scoreDelta: -7,
+      demandFactor: 0.86
+    },
+    GA: {
+      locations: [
+        ["Atlanta contractor pod", "Atlanta, GA 30303", 33.7490, -84.3880],
+        ["Savannah contractor pod", "Savannah, GA 31401", 32.0809, -81.0912],
+        ["Augusta contractor pod", "Augusta, GA 30901", 33.4735, -82.0105]
+      ],
+      scoreDelta: -10,
+      demandFactor: 0.78
+    }
+  };
+  const seed = areaOffsets[code];
+  if (!seed) return [];
+  return HIRE_OPTIONS.map((option, index) => {
+    const [displayName, locationName, centroidLatitude, centroidLongitude] = seed.locations[index];
+    return {
+      ...clone(option),
+      optionId: `${code}-HIRE-${String(index + 1).padStart(3, "0")}`,
+      areaGroupId: `${code}-GROUP-${index + 1}`,
+      primaryCellId: `${code}-CELL-${index + 1}`,
+      centroidLatitude,
+      centroidLongitude,
+      weightedActivityDemandHours: Math.round(option.weightedActivityDemandHours * seed.demandFactor),
+      activityCount: Math.round(option.activityCount * seed.demandFactor),
+      currentResourceCountWithinRadius: Math.max(4, option.currentResourceCountWithinRadius - 1),
+      totalWeeklyCapacityHours: option.weeklyCapacityHoursPerResource,
+      totalMonthlyCapacityHours: Math.round(option.weeklyCapacityHoursPerResource * 22),
+      estimatedAverageDaysReduction: Number(Math.max(0.2, option.estimatedAverageDaysReduction - 0.1).toFixed(1)),
+      estimatedWithinSevenDaysIncreasePoints: Math.max(2, option.estimatedWithinSevenDaysIncreasePoints - 1),
+      rank: index + 1,
+      score: Math.max(60, option.score + seed.scoreDelta),
+      displayName,
+      locationName
+    };
+  });
+}
+
+function moveOptionsForArea(area) {
+  const code = area.capacityArea;
+  if (code === "CA") return MOVE_OPTIONS;
+  if (code !== "NY") return [];
+  const resources = [
+    ["RES-NY-009", "Elena Brooks", "GA", "Georgia", 46.2, 84.4, 8],
+    ["RES-NY-017", "Noah Patel", "FL", "Florida", 39.6, 88.7, 10],
+    ["RES-NY-024", "Mina Alvarez", "TX", "Texas", 31.8, 79.2, 6]
+  ];
+  return MOVE_OPTIONS.map((option, index) => {
+    const [resourceId, resourceName, targetArea, targetAreaName, distanceKm, targetActivityToProximityRatio, projectedSourceIdleMinutesReduction] = resources[index];
+    return {
+      ...clone(option),
+      optionId: `NY-MOVE-${String(index + 1).padStart(3, "0")}`,
+      resourceId,
+      resourceName,
+      sourceArea: "NY",
+      sourceAreaName: "New York",
+      targetArea,
+      targetAreaName,
+      sourceIdleHoursLookback: Math.max(40, option.sourceIdleHoursLookback - 8),
+      sourceIdleHoursPerWeek: Math.max(10, option.sourceIdleHoursPerWeek - 2),
+      weeklyCapacityHoursMovable: Math.max(24, option.weeklyCapacityHoursMovable - 2),
+      targetCurrentGapHours: Math.max(18, option.targetCurrentGapHours - 4),
+      targetForecastGapHours: Math.max(36, option.targetForecastGapHours - 3),
+      targetNeedCoverageHours: Math.max(24, option.targetNeedCoverageHours - 2),
+      distanceKm,
+      sourceActivityToProximityRatio: Math.max(20, option.sourceActivityToProximityRatio - 2),
+      targetActivityToProximityRatio,
+      projectedSourceIdleMinutesReduction,
+      projectedTargetGapHoursAfterMove: Math.max(8, option.projectedTargetGapHoursAfterMove - 2),
+      rank: index + 1,
+      score: Math.max(66, option.score - 8)
+    };
+  });
+}
+
+function recommendationIdFor(capacityArea, issueType) {
+  if (issueType === "TIME_TO_START") return `REC-${capacityArea}-TTS-0001`;
+  if (issueType === "IDLE_TIME") return `REC-${capacityArea}-MOVE-0001`;
+  return `REC-${capacityArea}-WFM-0001`;
+}
+
+function hireBaseline(area = AREA_METRICS.FL) {
+  const days = area.metrics.AVERAGE_DAYS_TO_SCHEDULE;
+  const withinSevenDays = area.metrics.WITHIN_7_DAYS_PERCENT;
+  const workload = area.metrics.BOOKED_WORKLOAD_HOURS;
+  const available = area.metrics.AVAILABLE_RESOURCE_HOURS_PER_DAY;
   return {
-    currentAverageDaysToSchedule: 3.6,
-    currentWithinSevenDaysPercent: 72,
+    currentAverageDaysToSchedule: days.currentValue,
+    currentWithinSevenDaysPercent: withinSevenDays.currentValue,
     targetWithinSevenDaysPercent: 80,
-    currentBookedWorkloadHours: 6300,
-    currentAvailableResourceHoursPerDay: 1000,
-    currentAvailableResourceHoursPerMonth: 22000,
-    currentSchedulingRatio: 3.6,
+    currentBookedWorkloadHours: workload.currentValue,
+    currentAvailableResourceHoursPerDay: available.currentValue,
+    currentAvailableResourceHoursPerMonth: available.currentValue * 22,
+    currentSchedulingRatio: days.currentValue,
     forecastMonths: 6
   };
 }
 
-function buildHireCountScenario(resourceCountAdded) {
+function buildHireCountScenario(area, resourceCountAdded) {
+  const baseline = hireBaseline(area);
   const addedWeeklyCapacityHours = resourceCountAdded * 31;
-  const projectedAverageDaysToSchedule = Number(Math.max(2.4, 3.6 - resourceCountAdded * 0.45).toFixed(1));
+  const projectedAverageDaysToSchedule = Number(Math.max(1.8, baseline.currentAverageDaysToSchedule - resourceCountAdded * 0.45).toFixed(1));
   return {
     resourceCountAdded,
     addedWeeklyCapacityHours,
     addedMonthlyCapacityHours: Math.round(addedWeeklyCapacityHours * 22),
     projectedAverageDaysToSchedule,
-    projectedWithinSevenDaysPercent: Math.min(86, 72 + resourceCountAdded * 4),
+    projectedWithinSevenDaysPercent: Math.min(90, baseline.currentWithinSevenDaysPercent + resourceCountAdded * 4),
     projectedSchedulingRatio: projectedAverageDaysToSchedule,
     projectedMonthCountBeforeRatioStopsImproving: resourceCountAdded + 1
   };
 }
 
-function buildHireWorkloadForecast(resourceCountAdded) {
-  const forecastWorkload = [23200, 23300, 23400, 23500, 23600, 23700, 23800];
+function buildHireWorkloadForecast(area, resourceCountAdded) {
+  const workload = area.metrics.FORECAST_WORKLOAD_HOURS.currentValue;
+  const forecastWorkload = PERIODS.map((_, index) => workload + index * 100);
   return PERIODS.map((periodCode, index) => {
-    const beforeDay = 1000;
+    const beforeDay = area.metrics.AVAILABLE_RESOURCE_HOURS_PER_DAY.currentValue;
     const afterDay = beforeDay + resourceCountAdded * 40;
     const beforeMonth = beforeDay * 22;
     const afterMonth = afterDay * 22;
-    const pendingBefore = [6300, 6720, 7240, 7860, 8580, 9200, 9800][index];
+    const pendingBefore = Math.round(area.metrics.BOOKED_WORKLOAD_HOURS.currentValue * (1 + index * 0.07));
     const pendingAfter = Math.max(3000, pendingBefore - resourceCountAdded * 250 * index);
     return {
       periodCode,
@@ -907,16 +986,55 @@ function buildHireWorkloadForecast(resourceCountAdded) {
   });
 }
 
-function buildHireForecastSeries(resourceCountAdded, projectedAverageDaysToSchedule, projectedWithinSevenDaysPercent) {
-  const noAction = [3.6, 3.7, 3.8, 3.8, 3.9, 4.0, 4.1];
+function buildHireForecastSeries(area, resourceCountAdded, projectedAverageDaysToSchedule, projectedWithinSevenDaysPercent) {
+  const current = area.metrics.AVERAGE_DAYS_TO_SCHEDULE.currentValue;
+  const noAction = PERIODS.map((_, index) => Number((current + index * 0.1).toFixed(1)));
   const selected = noAction.map((value, index) => Number(Math.max(projectedAverageDaysToSchedule, value - resourceCountAdded * 0.25 * index).toFixed(1)));
   selected[selected.length - 1] = projectedAverageDaysToSchedule;
   return {
     periodCodes: PERIODS,
     noActionAverageDaysToSchedule: noAction,
     selectedOptionsAverageDaysToSchedule: selected,
-    selectedOptionsWithinSevenDaysPercent: PERIODS.map((_, index) => Math.min(projectedWithinSevenDaysPercent, 72 + index * resourceCountAdded))
+    selectedOptionsWithinSevenDaysPercent: PERIODS.map((_, index) => Math.min(projectedWithinSevenDaysPercent, area.metrics.WITHIN_7_DAYS_PERCENT.currentValue + index * resourceCountAdded))
   };
+}
+
+function moveBaseline(area = AREA_METRICS.CA) {
+  const idleHours = area.metrics.IDLE_HOURS.currentValue;
+  const idleMinutes = area.metrics.IDLE_MINUTES_PER_RESOURCE.currentValue;
+  const resourceCount = area.capacityArea === "NY" ? 9 : 18;
+  return {
+    sourceIdleHoursLookback: Math.round(idleHours * 11.7),
+    sourceIdleHoursPerWeek: Math.round(idleHours * 2.9),
+    sourceIdleResourceCount: resourceCount,
+    sourceAvailableWeeklyCapacityHours: resourceCount * 40,
+    sourceMovableWeeklyCapacityHours: Math.round(idleHours * 3.4),
+    currentIdleMinutesPerResource: idleMinutes
+  };
+}
+
+function moveSkillGroups(area = AREA_METRICS.CA) {
+  const baseline = moveBaseline(area);
+  return [
+    {
+      skillGroupId: `${area.capacityArea}-SKILLGROUP-001`,
+      workSkillCodes: ["APPLIANCE_REPAIR", "PREVENTIVE_MAINTENANCE"],
+      workSkillNames: ["Appliance Repair", "Preventive Maintenance"],
+      resourceCount: Math.ceil(baseline.sourceIdleResourceCount * 0.65),
+      idleHoursPerWeek: Math.round(baseline.sourceIdleHoursPerWeek * 0.63),
+      minimumIndividualIdleHoursPerWeek: 8,
+      nonOverlappingGroupSequence: 1
+    },
+    {
+      skillGroupId: `${area.capacityArea}-SKILLGROUP-002`,
+      workSkillCodes: ["HVAC_SERVICE", "ELECTRICAL_DIAGNOSTICS"],
+      workSkillNames: ["HVAC Service", "Electrical Diagnostics"],
+      resourceCount: Math.floor(baseline.sourceIdleResourceCount * 0.35),
+      idleHoursPerWeek: Math.round(baseline.sourceIdleHoursPerWeek * 0.37),
+      minimumIndividualIdleHoursPerWeek: 7,
+      nonOverlappingGroupSequence: 2
+    }
+  ];
 }
 
 function buildTargetAreaImpacts(selectedOptions) {
@@ -937,12 +1055,13 @@ function buildTargetAreaImpacts(selectedOptions) {
   }).filter((impact) => impact.movedResourceCount > 0 || !selectedOptions.length);
 }
 
-function buildMoveForecastSeries(selectedOptions, projectedIdleMinutesPerResource, targetAreaImpacts) {
+function buildMoveForecastSeries(area, selectedOptions, projectedIdleMinutesPerResource, targetAreaImpacts) {
   const totalCovered = targetAreaImpacts.reduce((sum, impact) => sum + impact.coveredHours, 0);
+  const current = area.metrics.IDLE_MINUTES_PER_RESOURCE.currentValue;
   return {
     periodCodes: PERIODS,
-    sourceNoActionIdleMinutesPerResource: [64, 66, 68, 69, 69, 70, 70],
-    sourceSelectedMovesIdleMinutesPerResource: [64, 61, 58, projectedIdleMinutesPerResource, projectedIdleMinutesPerResource, projectedIdleMinutesPerResource, projectedIdleMinutesPerResource],
+    sourceNoActionIdleMinutesPerResource: PERIODS.map((_, index) => Number((current + index).toFixed(1))),
+    sourceSelectedMovesIdleMinutesPerResource: [current, Math.max(projectedIdleMinutesPerResource, current - 3), Math.max(projectedIdleMinutesPerResource, current - 6), projectedIdleMinutesPerResource, projectedIdleMinutesPerResource, projectedIdleMinutesPerResource, projectedIdleMinutesPerResource],
     targetNoActionGapHours: [58, 52, 50, 48, 46, 44, 42],
     targetSelectedMovesGapHours: [58, Math.max(0, 52 - totalCovered), Math.max(0, 50 - totalCovered), Math.max(0, 48 - totalCovered), Math.max(0, 46 - totalCovered), Math.max(0, 44 - totalCovered), Math.max(0, 42 - totalCovered)],
     targetAcceptableGapHours: PERIODS.map(() => 20)
@@ -981,17 +1100,23 @@ function requireArea(value) {
 function requireHire(args = {}) {
   const capacityArea = String(args.capacityArea || "FL").toUpperCase();
   const issueType = String(args.issueType || "TIME_TO_START").toUpperCase();
-  if (capacityArea !== "FL" || issueType !== "TIME_TO_START") {
-    throw new ApiError("UNSUPPORTED_HIRE_FLOW", 400, false, { supportedCapacityArea: "FL", supportedIssueType: "TIME_TO_START" });
+  const area = AREA_METRICS[capacityArea];
+  const supportedAreas = ["FL", "TX", "GA"];
+  if (!area || !supportedAreas.includes(capacityArea) || issueType !== "TIME_TO_START") {
+    throw new ApiError("UNSUPPORTED_HIRE_FLOW", 400, false, { supportedCapacityAreas: supportedAreas, supportedIssueType: "TIME_TO_START" });
   }
+  return area;
 }
 
 function requireMove(args = {}) {
   const capacityArea = String(args.capacityArea || args.sourceArea || "CA").toUpperCase();
   const issueType = String(args.issueType || "IDLE_TIME").toUpperCase();
-  if (capacityArea !== "CA" || issueType !== "IDLE_TIME") {
-    throw new ApiError("UNSUPPORTED_MOVE_FLOW", 400, false, { supportedCapacityArea: "CA", supportedIssueType: "IDLE_TIME" });
+  const area = AREA_METRICS[capacityArea];
+  const supportedAreas = ["CA", "NY"];
+  if (!area || !supportedAreas.includes(capacityArea) || issueType !== "IDLE_TIME") {
+    throw new ApiError("UNSUPPORTED_MOVE_FLOW", 400, false, { supportedCapacityAreas: supportedAreas, supportedIssueType: "IDLE_TIME" });
   }
+  return area;
 }
 
 function createSeedState() {

@@ -365,7 +365,7 @@ function hireSchema(extra = {}) {
     type: "object",
     properties: {
       recommendationId: { type: "string" },
-      capacityArea: { type: "string", description: "Capacity area code. Seed data supports FL for hire flow." },
+      capacityArea: { type: "string", description: "Capacity area code. Seed data supports FL, TX, and GA for hire flow." },
       issueType: { type: "string", enum: ["TIME_TO_START"] },
       ...extra
     }
@@ -377,7 +377,7 @@ function moveSchema(extra = {}) {
     type: "object",
     properties: {
       recommendationId: { type: "string" },
-      capacityArea: { type: "string", description: "Source capacity area code. Seed data supports CA for move flow." },
+      capacityArea: { type: "string", description: "Source capacity area code. Seed data supports CA and NY for move flow." },
       sourceArea: { type: "string" },
       issueType: { type: "string", enum: ["IDLE_TIME"] },
       ...extra

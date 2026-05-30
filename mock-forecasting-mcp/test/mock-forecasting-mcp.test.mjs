@@ -112,6 +112,39 @@ test("landing candidate minimum score can return no issue rows", async () => {
   assert.deepEqual(result.items, []);
 });
 
+test("each landing candidate can retrieve matching numeric recommendation options", async () => {
+  resetState();
+  const candidates = await callTool("get_workforce_recommendation_candidates", { limit: 5 });
+  assert.equal(candidates.items.length, 5);
+
+  for (const candidate of candidates.items) {
+    const toolName = candidate.issueType === "TIME_TO_START"
+      ? "get_time_to_start_hire_options"
+      : "get_idle_time_resource_move_options";
+    const optionsResult = await callTool(toolName, {
+      capacityArea: candidate.capacityArea,
+      issueType: candidate.issueType,
+      recommendationId: candidate.recommendationId,
+      limit: 3
+    });
+    assert.equal(optionsResult.capacityArea, candidate.capacityArea);
+    assert.equal(optionsResult.issueType, candidate.issueType);
+    assert.equal(optionsResult.recommendationId, candidate.recommendationId);
+    assert.ok(optionsResult.options.length > 0);
+    assert.ok(optionsResult.options.length <= 3);
+    assert.equal(Object.hasOwn(optionsResult, "observation"), false);
+    assert.equal(Object.hasOwn(optionsResult, "severity"), false);
+    assert.equal(Object.hasOwn(optionsResult, "chartConfig"), false);
+    assert.equal(Object.hasOwn(optionsResult, "recommendationText"), false);
+    for (const option of optionsResult.options) {
+      assert.equal(Object.hasOwn(option, "observation"), false);
+      assert.equal(Object.hasOwn(option, "severity"), false);
+      assert.equal(Object.hasOwn(option, "chartConfig"), false);
+      assert.equal(Object.hasOwn(option, "recommendationText"), false);
+    }
+  }
+});
+
 test("metric values require capacity area and return time series", async () => {
   await assert.rejects(
     () => callTool("get_workforce_metric_values", {}),
