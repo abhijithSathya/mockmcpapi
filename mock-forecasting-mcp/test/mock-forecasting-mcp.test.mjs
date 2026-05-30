@@ -147,6 +147,20 @@ test("each landing candidate can retrieve matching numeric recommendation option
   }
 });
 
+test("time-to-start landing candidates include numeric seven-day coverage", async () => {
+  resetState();
+  const candidates = await callTool("get_workforce_recommendation_candidates", { issueTypes: ["TIME_TO_START"], limit: 5 });
+  assert.ok(candidates.items.length >= 3);
+  for (const candidate of candidates.items) {
+    const coverage = candidate.metricSnapshots.find((metric) => metric.metricCode === "WITHIN_7_DAYS_PERCENT");
+    assert.ok(coverage);
+    assert.equal(typeof coverage.currentValue, "number");
+    assert.equal(coverage.unitCode, "PERCENT");
+    assert.equal(Object.hasOwn(coverage, "observation"), false);
+    assert.equal(Object.hasOwn(coverage, "recommendationText"), false);
+  }
+});
+
 test("metric values require capacity area and return time series", async () => {
   await assert.rejects(
     () => callTool("get_workforce_metric_values", {}),

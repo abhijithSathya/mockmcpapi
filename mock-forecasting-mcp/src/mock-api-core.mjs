@@ -712,7 +712,7 @@ function buildTxHireCandidate() {
     issueType: "TIME_TO_START",
     rank: 3,
     score: 81,
-    metricSnapshots: snapshotMetrics(area, ["AVERAGE_DAYS_TO_SCHEDULE", "FORECAST_WORKLOAD_HOURS", "HIGH_TRAVEL_TIME_ACTIVITY_COUNT"]),
+    metricSnapshots: snapshotMetrics(area, ["AVERAGE_DAYS_TO_SCHEDULE", "WITHIN_7_DAYS_PERCENT", "FORECAST_WORKLOAD_HOURS", "HIGH_TRAVEL_TIME_ACTIVITY_COUNT"]),
     calculationInputs: {
       lookbackMonths: 3,
       forecastMonths: 6,
@@ -726,7 +726,7 @@ function buildTxHireCandidate() {
     ],
     detailRequest: {
       capacityArea: "TX",
-      detailMetricCodes: ["AVERAGE_DAYS_TO_SCHEDULE", "FORECAST_WORKLOAD_HOURS", "HIGH_TRAVEL_TIME_ACTIVITY_COUNT", "SCHEDULING_RATIO"]
+      detailMetricCodes: ["AVERAGE_DAYS_TO_SCHEDULE", "WITHIN_7_DAYS_PERCENT", "FORECAST_WORKLOAD_HOURS", "HIGH_TRAVEL_TIME_ACTIVITY_COUNT", "SCHEDULING_RATIO"]
     }
   };
 }
@@ -740,7 +740,7 @@ function buildGaHireCandidate() {
     issueType: "TIME_TO_START",
     rank: 4,
     score: 78,
-    metricSnapshots: snapshotMetrics(area, ["AVERAGE_DAYS_TO_SCHEDULE", "FORECAST_WORKLOAD_HOURS", "HIGH_TRAVEL_TIME_ACTIVITY_COUNT"]),
+    metricSnapshots: snapshotMetrics(area, ["AVERAGE_DAYS_TO_SCHEDULE", "WITHIN_7_DAYS_PERCENT", "FORECAST_WORKLOAD_HOURS", "HIGH_TRAVEL_TIME_ACTIVITY_COUNT"]),
     calculationInputs: {
       lookbackMonths: 3,
       forecastMonths: 6,
@@ -754,7 +754,7 @@ function buildGaHireCandidate() {
     ],
     detailRequest: {
       capacityArea: "GA",
-      detailMetricCodes: ["AVERAGE_DAYS_TO_SCHEDULE", "FORECAST_WORKLOAD_HOURS", "HIGH_TRAVEL_TIME_ACTIVITY_COUNT", "SCHEDULING_RATIO"]
+      detailMetricCodes: ["AVERAGE_DAYS_TO_SCHEDULE", "WITHIN_7_DAYS_PERCENT", "FORECAST_WORKLOAD_HOURS", "HIGH_TRAVEL_TIME_ACTIVITY_COUNT", "SCHEDULING_RATIO"]
     }
   };
 }
