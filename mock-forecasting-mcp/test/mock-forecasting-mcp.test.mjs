@@ -71,6 +71,7 @@ test("landing candidates use numeric-only v4 contract", async () => {
   assert.equal(Object.hasOwn(result.items[0], "observation"), false);
   assert.equal(Object.hasOwn(result.items[0], "severity"), false);
   const activityStartMetric = result.items[0].metricSnapshots.find((metric) => metric.metricCode === "AVERAGE_DAYS_TO_SCHEDULE");
+  assert.equal(typeof result.items[0].calculationInputs.recommendedResourceCount, "number");
   assert.equal(activityStartMetric.lookbackStartValue, 3);
   assert.equal(activityStartMetric.currentValue, 6);
   assert.equal(Object.hasOwn(activityStartMetric, "targetValue"), false);
@@ -78,6 +79,7 @@ test("landing candidates use numeric-only v4 contract", async () => {
   assert.equal(Object.hasOwn(result.items[0].timeSeriesPreview[0], "targetValues"), false);
 
   const resourceUnderutilization = result.items.find((item) => item.issueType === "IDLE_TIME");
+  assert.equal(typeof resourceUnderutilization.calculationInputs.recommendedResourceReductionCount, "number");
   const underutilizationMetric = resourceUnderutilization.metricSnapshots.find((metric) => metric.metricCode === "IDLE_HOURS");
   assert.equal(underutilizationMetric.lookbackStartValue, 53);
   assert.equal(underutilizationMetric.currentValue, 65);

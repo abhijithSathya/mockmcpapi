@@ -663,7 +663,8 @@ function buildHireCandidate() {
       forecastMonths: 6,
       bookedWorkloadIncreaseHours: 3300,
       availableResourceHoursPerDay: 1000,
-      currentSchedulingRatio: 3.6
+      currentSchedulingRatio: 3.6,
+      recommendedResourceCount: 3
     },
     timeSeriesPreview: [
       seriesPreview(area, "AVERAGE_DAYS_TO_SCHEDULE", [3, 4.5, 6])
@@ -689,7 +690,8 @@ function buildMoveCandidate() {
       lookbackMonths: 3,
       idleHoursPerWeek: 190,
       idleResourceCount: 18,
-      movableWeeklyCapacityHours: 220
+      movableWeeklyCapacityHours: 220,
+      recommendedResourceReductionCount: 3
     },
     timeSeriesPreview: [
       seriesPreview(area, "IDLE_HOURS", [53, 60, 65])
@@ -716,7 +718,8 @@ function buildTxHireCandidate() {
       forecastMonths: 6,
       bookedWorkloadIncreaseHours: 900,
       availableResourceHoursPerDay: 960,
-      currentSchedulingRatio: 2.9
+      currentSchedulingRatio: 2.9,
+      recommendedResourceCount: 2
     },
     timeSeriesPreview: [
       seriesPreview(area, "AVERAGE_DAYS_TO_SCHEDULE", [2.3, 2.6, 2.9], 2.4)
@@ -743,7 +746,8 @@ function buildGaHireCandidate() {
       forecastMonths: 6,
       bookedWorkloadIncreaseHours: 750,
       availableResourceHoursPerDay: 920,
-      currentSchedulingRatio: 4.1
+      currentSchedulingRatio: 4.1,
+      recommendedResourceCount: 2
     },
     timeSeriesPreview: [
       seriesPreview(area, "AVERAGE_DAYS_TO_SCHEDULE", [2.8, 3.5, 4.1])
@@ -769,7 +773,8 @@ function buildNyMoveCandidate() {
       lookbackMonths: 3,
       idleHoursPerWeek: 92,
       idleResourceCount: 9,
-      movableWeeklyCapacityHours: 96
+      movableWeeklyCapacityHours: 96,
+      recommendedResourceReductionCount: 2
     },
     timeSeriesPreview: [
       seriesPreview(area, "IDLE_HOURS", [70, 84, 92])
