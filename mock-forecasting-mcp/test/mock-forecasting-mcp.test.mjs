@@ -114,6 +114,32 @@ test("landing candidate minimum score can return no issue rows", async () => {
   assert.deepEqual(result.items, []);
 });
 
+test("watch candidates have smaller issue values than at-risk candidates of the same issue type", async () => {
+  resetState();
+  const result = await callTool("get_workforce_recommendation_candidates", { limit: 5 });
+  const texas = result.items.find((item) => item.capacityArea === "TX");
+  const georgia = result.items.find((item) => item.capacityArea === "GA");
+  const california = result.items.find((item) => item.capacityArea === "CA");
+  const newYork = result.items.find((item) => item.capacityArea === "NY");
+
+  assert.ok(texas);
+  assert.ok(georgia);
+  assert.ok(california);
+  assert.ok(newYork);
+  assert.ok(texas.score >= 80 && texas.score < 90);
+  assert.ok(georgia.score >= 65 && georgia.score < 80);
+  assert.ok(california.score >= 80 && california.score < 90);
+  assert.ok(newYork.score >= 65 && newYork.score < 80);
+
+  const texasDays = texas.metricSnapshots.find((metric) => metric.metricCode === "AVERAGE_DAYS_TO_SCHEDULE").currentValue;
+  const georgiaDays = georgia.metricSnapshots.find((metric) => metric.metricCode === "AVERAGE_DAYS_TO_SCHEDULE").currentValue;
+  const californiaIdleHours = california.metricSnapshots.find((metric) => metric.metricCode === "IDLE_HOURS").currentValue;
+  const newYorkIdleHours = newYork.metricSnapshots.find((metric) => metric.metricCode === "IDLE_HOURS").currentValue;
+
+  assert.ok(georgiaDays < texasDays);
+  assert.ok(newYorkIdleHours < californiaIdleHours);
+});
+
 test("each landing candidate can retrieve matching numeric recommendation options", async () => {
   resetState();
   const candidates = await callTool("get_workforce_recommendation_candidates", { limit: 5 });

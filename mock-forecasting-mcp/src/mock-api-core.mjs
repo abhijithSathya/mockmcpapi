@@ -85,17 +85,17 @@ const AREA_METRICS = {
     metrics: {
       BOOKED_WORKLOAD_HOURS: values("HOURS", 4850, 4550, 4100, 4850, 4300),
       AVAILABLE_RESOURCE_HOURS_PER_DAY: values("HOURS", 920, 925, 940, 920, 960),
-      AVERAGE_DAYS_TO_SCHEDULE: values("DAYS", 4.1, 3.5, 2.8, 4.1),
-      WITHIN_7_DAYS_PERCENT: values("PERCENT", 74, 78, 84, 74, 80),
+      AVERAGE_DAYS_TO_SCHEDULE: values("DAYS", 2.6, 2.4, 2.2, 2.6),
+      WITHIN_7_DAYS_PERCENT: values("PERCENT", 80, 82, 85, 80, 80),
       HIGH_TRAVEL_TIME_ACTIVITY_COUNT: values("COUNT", 31, 27, 24, 31, 25),
       OVERTIME_HOURS: values("HOURS", 330, 285, 230, 330, 260),
       FORECAST_WORKLOAD_HOURS: values("HOURS", 21100, 20600, 20100, 21100, 20500),
-      SCHEDULING_RATIO: values("RATIO", 4.1, 3.5, 2.8, 4.1),
+      SCHEDULING_RATIO: values("RATIO", 2.6, 2.4, 2.2, 2.6),
       IDLE_HOURS: values("HOURS", 180, 168, 156, 180),
       IDLE_MINUTES_PER_RESOURCE: values("MINUTES", 42, 40, 38, 42)
     },
     series: {
-      AVERAGE_DAYS_TO_SCHEDULE: [2.8, 3.5, 4.1],
+      AVERAGE_DAYS_TO_SCHEDULE: [2.2, 2.4, 2.6],
       IDLE_HOURS: [156, 168, 180],
       IDLE_MINUTES_PER_RESOURCE: [38, 40, 42]
     }
@@ -112,13 +112,13 @@ const AREA_METRICS = {
       OVERTIME_HOURS: values("HOURS", 240, 225, 210, 240, 240),
       FORECAST_WORKLOAD_HOURS: values("HOURS", 22100, 21800, 21500, 22100, 21800),
       SCHEDULING_RATIO: values("RATIO", 2.4, 2.2, 2.1, 2.4),
-      IDLE_HOURS: values("HOURS", 92, 84, 70, 92),
-      IDLE_MINUTES_PER_RESOURCE: values("MINUTES", 50, 46, 40, 50)
+      IDLE_HOURS: values("HOURS", 45, 42, 38, 45),
+      IDLE_MINUTES_PER_RESOURCE: values("MINUTES", 31, 29, 27, 31)
     },
     series: {
       AVERAGE_DAYS_TO_SCHEDULE: [2.1, 2.2, 2.4],
-      IDLE_HOURS: [70, 84, 92],
-      IDLE_MINUTES_PER_RESOURCE: [40, 46, 50]
+      IDLE_HOURS: [38, 42, 45],
+      IDLE_MINUTES_PER_RESOURCE: [27, 29, 31]
     }
   }
 };
@@ -744,13 +744,13 @@ function buildGaHireCandidate() {
     calculationInputs: {
       lookbackMonths: 3,
       forecastMonths: 6,
-      bookedWorkloadIncreaseHours: 750,
+      bookedWorkloadIncreaseHours: 350,
       availableResourceHoursPerDay: 920,
-      currentSchedulingRatio: 4.1,
+      currentSchedulingRatio: 2.6,
       recommendedResourceCount: 2
     },
     timeSeriesPreview: [
-      seriesPreview(area, "AVERAGE_DAYS_TO_SCHEDULE", [2.8, 3.5, 4.1])
+      seriesPreview(area, "AVERAGE_DAYS_TO_SCHEDULE", [2.2, 2.4, 2.6])
     ],
     detailRequest: {
       capacityArea: "GA",
@@ -771,13 +771,13 @@ function buildNyMoveCandidate() {
     metricSnapshots: snapshotMetrics(area, ["IDLE_HOURS", "IDLE_MINUTES_PER_RESOURCE"]),
     calculationInputs: {
       lookbackMonths: 3,
-      idleHoursPerWeek: 92,
+      idleHoursPerWeek: 45,
       idleResourceCount: 9,
       movableWeeklyCapacityHours: 96,
       recommendedResourceReductionCount: 2
     },
     timeSeriesPreview: [
-      seriesPreview(area, "IDLE_HOURS", [70, 84, 92])
+      seriesPreview(area, "IDLE_HOURS", [38, 42, 45])
     ],
     detailRequest: {
       capacityArea: "NY",
