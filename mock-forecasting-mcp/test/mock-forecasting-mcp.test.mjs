@@ -75,7 +75,8 @@ test("landing candidates use numeric-only v4 contract", async () => {
   assert.equal(activityStartMetric.lookbackStartValue, 3);
   assert.equal(activityStartMetric.currentValue, 6);
   assert.equal(Object.hasOwn(activityStartMetric, "targetValue"), false);
-  assert.deepEqual(result.items[0].timeSeriesPreview[0].actualValues, [3, 4.5, 6]);
+  assert.deepEqual(result.items[0].timeSeriesPreview[0].xValues, ["M_MINUS_3", "M_MINUS_2", "M_MINUS_1", "CURRENT"]);
+  assert.deepEqual(result.items[0].timeSeriesPreview[0].actualValues, [2.4, 3, 4.5, 6]);
   assert.equal(Object.hasOwn(result.items[0].timeSeriesPreview[0], "targetValues"), false);
 
   const resourceUnderutilization = result.items.find((item) => item.issueType === "IDLE_TIME");
@@ -86,6 +87,20 @@ test("landing candidates use numeric-only v4 contract", async () => {
   assert.equal(Object.hasOwn(underutilizationMetric, "targetValue"), false);
   assert.deepEqual(resourceUnderutilization.timeSeriesPreview[0].actualValues, [53, 60, 65]);
   assert.equal(Object.hasOwn(resourceUnderutilization.timeSeriesPreview[0], "targetValues"), false);
+});
+
+test("time-to-start landing candidates expose four numeric lookback trend points", async () => {
+  resetState();
+  const candidates = await callTool("get_workforce_recommendation_candidates", { issueTypes: ["TIME_TO_START"], limit: 5 });
+  assert.ok(candidates.items.length >= 3);
+
+  for (const candidate of candidates.items) {
+    const preview = candidate.timeSeriesPreview[0];
+    assert.deepEqual(preview.xValues, ["M_MINUS_3", "M_MINUS_2", "M_MINUS_1", "CURRENT"]);
+    assert.equal(preview.actualValues.length, 4);
+    assert.equal(preview.actualValues.every((value) => typeof value === "number"), true);
+    assert.equal(Object.hasOwn(preview, "targetValues"), false);
+  }
 });
 
 test("landing candidate limit defaults and caps at top five", async () => {

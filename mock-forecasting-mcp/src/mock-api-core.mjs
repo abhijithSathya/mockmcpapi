@@ -32,7 +32,7 @@ const AREA_METRICS = {
       IDLE_MINUTES_PER_RESOURCE: values("MINUTES", 33, 31, 29, 33)
     },
     series: {
-      AVERAGE_DAYS_TO_SCHEDULE: [3, 4.5, 6],
+      AVERAGE_DAYS_TO_SCHEDULE: [2.4, 3, 4.5, 6],
       IDLE_HOURS: [220, 240, 260],
       IDLE_MINUTES_PER_RESOURCE: [29, 31, 33]
     }
@@ -53,7 +53,7 @@ const AREA_METRICS = {
       IDLE_MINUTES_PER_RESOURCE: values("MINUTES", 64, 58, 52, 64)
     },
     series: {
-      AVERAGE_DAYS_TO_SCHEDULE: [1.7, 1.8, 1.8],
+      AVERAGE_DAYS_TO_SCHEDULE: [1.6, 1.7, 1.8, 1.8],
       IDLE_HOURS: [53, 60, 65],
       IDLE_MINUTES_PER_RESOURCE: [52, 58, 64]
     }
@@ -74,7 +74,7 @@ const AREA_METRICS = {
       IDLE_MINUTES_PER_RESOURCE: values("MINUTES", 38, 37, 36, 38)
     },
     series: {
-      AVERAGE_DAYS_TO_SCHEDULE: [2.3, 2.6, 2.9],
+      AVERAGE_DAYS_TO_SCHEDULE: [2.1, 2.3, 2.6, 2.9],
       IDLE_HOURS: [290, 300, 310],
       IDLE_MINUTES_PER_RESOURCE: [36, 37, 38]
     }
@@ -95,7 +95,7 @@ const AREA_METRICS = {
       IDLE_MINUTES_PER_RESOURCE: values("MINUTES", 42, 40, 38, 42)
     },
     series: {
-      AVERAGE_DAYS_TO_SCHEDULE: [2.2, 2.4, 2.6],
+      AVERAGE_DAYS_TO_SCHEDULE: [2, 2.2, 2.4, 2.6],
       IDLE_HOURS: [156, 168, 180],
       IDLE_MINUTES_PER_RESOURCE: [38, 40, 42]
     }
@@ -116,7 +116,7 @@ const AREA_METRICS = {
       IDLE_MINUTES_PER_RESOURCE: values("MINUTES", 31, 29, 27, 31)
     },
     series: {
-      AVERAGE_DAYS_TO_SCHEDULE: [2.1, 2.2, 2.4],
+      AVERAGE_DAYS_TO_SCHEDULE: [2, 2.1, 2.2, 2.4],
       IDLE_HOURS: [38, 42, 45],
       IDLE_MINUTES_PER_RESOURCE: [27, 29, 31]
     }
@@ -667,7 +667,7 @@ function buildHireCandidate() {
       recommendedResourceCount: 3
     },
     timeSeriesPreview: [
-      seriesPreview(area, "AVERAGE_DAYS_TO_SCHEDULE", [3, 4.5, 6])
+      seriesPreview(area, "AVERAGE_DAYS_TO_SCHEDULE", area.series.AVERAGE_DAYS_TO_SCHEDULE)
     ],
     detailRequest: {
       capacityArea: "FL",
@@ -722,7 +722,7 @@ function buildTxHireCandidate() {
       recommendedResourceCount: 2
     },
     timeSeriesPreview: [
-      seriesPreview(area, "AVERAGE_DAYS_TO_SCHEDULE", [2.3, 2.6, 2.9], 2.4)
+      seriesPreview(area, "AVERAGE_DAYS_TO_SCHEDULE", area.series.AVERAGE_DAYS_TO_SCHEDULE, 2.4)
     ],
     detailRequest: {
       capacityArea: "TX",
@@ -750,7 +750,7 @@ function buildGaHireCandidate() {
       recommendedResourceCount: 2
     },
     timeSeriesPreview: [
-      seriesPreview(area, "AVERAGE_DAYS_TO_SCHEDULE", [2.2, 2.4, 2.6])
+      seriesPreview(area, "AVERAGE_DAYS_TO_SCHEDULE", area.series.AVERAGE_DAYS_TO_SCHEDULE)
     ],
     detailRequest: {
       capacityArea: "GA",
@@ -812,7 +812,7 @@ function seriesPreview(area, metricCode, actualValues, targetValue) {
     seriesCode: `${metricCode}_BY_MONTH`,
     metricCode,
     unitCode: area.metrics[metricCode].unitCode,
-    xValues: LOOKBACK_PERIODS.slice(1),
+    xValues: LOOKBACK_PERIODS.slice(-actualValues.length),
     actualValues
   };
   if (!NO_TARGET_METRIC_CODES.has(metricCode) && targetValue !== undefined) {
