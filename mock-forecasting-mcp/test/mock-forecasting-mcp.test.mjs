@@ -72,32 +72,33 @@ test("landing candidates use numeric-only v4 contract", async () => {
   assert.equal(Object.hasOwn(result.items[0], "severity"), false);
   const activityStartMetric = result.items[0].metricSnapshots.find((metric) => metric.metricCode === "AVERAGE_DAYS_TO_SCHEDULE");
   assert.equal(typeof result.items[0].calculationInputs.recommendedResourceCount, "number");
-  assert.equal(activityStartMetric.lookbackStartValue, 3);
+  assert.equal(activityStartMetric.lookbackStartValue, 4.8);
   assert.equal(activityStartMetric.currentValue, 6);
   assert.equal(Object.hasOwn(activityStartMetric, "targetValue"), false);
-  assert.deepEqual(result.items[0].timeSeriesPreview[0].xValues, ["M_MINUS_3", "M_MINUS_2", "M_MINUS_1", "CURRENT"]);
-  assert.deepEqual(result.items[0].timeSeriesPreview[0].actualValues, [2.4, 3, 4.5, 6]);
+  assert.deepEqual(result.items[0].timeSeriesPreview[0].xValues, ["M_MINUS_6", "M_MINUS_5", "M_MINUS_4", "M_MINUS_3", "M_MINUS_2", "M_MINUS_1", "CURRENT"]);
+  assert.deepEqual(result.items[0].timeSeriesPreview[0].actualValues, [4.8, 5, 5.2, 5.4, 5.6, 5.8, 6]);
   assert.equal(Object.hasOwn(result.items[0].timeSeriesPreview[0], "targetValues"), false);
 
   const resourceUnderutilization = result.items.find((item) => item.issueType === "IDLE_TIME");
   assert.equal(typeof resourceUnderutilization.calculationInputs.recommendedResourceReductionCount, "number");
   const underutilizationMetric = resourceUnderutilization.metricSnapshots.find((metric) => metric.metricCode === "IDLE_HOURS");
-  assert.equal(underutilizationMetric.lookbackStartValue, 53);
+  assert.equal(underutilizationMetric.lookbackStartValue, 59);
   assert.equal(underutilizationMetric.currentValue, 65);
   assert.equal(Object.hasOwn(underutilizationMetric, "targetValue"), false);
-  assert.deepEqual(resourceUnderutilization.timeSeriesPreview[0].actualValues, [53, 60, 65]);
+  assert.deepEqual(resourceUnderutilization.timeSeriesPreview[0].xValues, ["M_MINUS_6", "M_MINUS_5", "M_MINUS_4", "M_MINUS_3", "M_MINUS_2", "M_MINUS_1", "CURRENT"]);
+  assert.deepEqual(resourceUnderutilization.timeSeriesPreview[0].actualValues, [59, 60, 61, 62, 63, 64, 65]);
   assert.equal(Object.hasOwn(resourceUnderutilization.timeSeriesPreview[0], "targetValues"), false);
 });
 
-test("time-to-start landing candidates expose four numeric lookback trend points", async () => {
+test("time-to-start landing candidates expose six-month numeric lookback trend points", async () => {
   resetState();
   const candidates = await callTool("get_workforce_recommendation_candidates", { issueTypes: ["TIME_TO_START"], limit: 5 });
   assert.ok(candidates.items.length >= 3);
 
   for (const candidate of candidates.items) {
     const preview = candidate.timeSeriesPreview[0];
-    assert.deepEqual(preview.xValues, ["M_MINUS_3", "M_MINUS_2", "M_MINUS_1", "CURRENT"]);
-    assert.equal(preview.actualValues.length, 4);
+    assert.deepEqual(preview.xValues, ["M_MINUS_6", "M_MINUS_5", "M_MINUS_4", "M_MINUS_3", "M_MINUS_2", "M_MINUS_1", "CURRENT"]);
+    assert.equal(preview.actualValues.length, 7);
     assert.equal(preview.actualValues.every((value) => typeof value === "number"), true);
     assert.equal(Object.hasOwn(preview, "targetValues"), false);
   }
@@ -221,6 +222,10 @@ test("metric values require capacity area and return time series", async () => {
   }
   for (const series of result.timeSeries) {
     assert.equal(Object.hasOwn(series, "targetValues"), false);
+    if (["AVERAGE_DAYS_TO_SCHEDULE", "IDLE_HOURS", "IDLE_MINUTES_PER_RESOURCE"].includes(series.metricCode)) {
+      assert.deepEqual(series.xValues, ["M_MINUS_6", "M_MINUS_5", "M_MINUS_4", "M_MINUS_3", "M_MINUS_2", "M_MINUS_1", "CURRENT"]);
+      assert.equal(series.actualValues.length, 7);
+    }
   }
 });
 
