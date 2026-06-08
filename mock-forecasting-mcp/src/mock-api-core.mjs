@@ -3,7 +3,7 @@ import { getOpenApiSpec } from "./openapi-spec.mjs";
 const SERVICE_NAME = "forecasting-workforce-mock-api";
 const SERVICE_VERSION = "0.1.0";
 const BASE_NOW = "2026-05-26T10:30:00Z";
-const DATA_VERSION = "forecasting-27a-mock-003";
+const DATA_VERSION = "forecasting-27a-mock-004";
 const PERIODS = ["CURRENT", "PLUS_1_MONTH", "PLUS_2_MONTH", "PLUS_3_MONTH", "PLUS_4_MONTH", "PLUS_5_MONTH", "PLUS_6_MONTH"];
 const LOOKBACK_PERIODS = ["M_MINUS_6", "M_MINUS_5", "M_MINUS_4", "M_MINUS_3", "M_MINUS_2", "M_MINUS_1", "CURRENT"];
 const NO_TARGET_METRIC_CODES = new Set([
@@ -486,7 +486,7 @@ function simulateHireImpact(args = {}) {
   const addedWeeklyCapacityHours = selectedOptions.reduce((sum, option) => sum + option.weeklyCapacityHoursPerResource * resourceCountForOption(args, option), 0);
   const addedMonthlyCapacityHours = Math.round(addedWeeklyCapacityHours * 22);
   const minimumAverageDays = Math.max(1.8, Number((baseline.currentAverageDaysToSchedule * 0.45).toFixed(1)));
-  const projectedAverageDaysToSchedule = Math.max(minimumAverageDays, Number((baseline.currentAverageDaysToSchedule - selectedResourceCount * 0.45).toFixed(1)));
+  const projectedAverageDaysToSchedule = Math.max(minimumAverageDays, Number((baseline.currentAverageDaysToSchedule - selectedResourceCount * 0.05).toFixed(2)));
   const projectedWithinSevenDaysPercent = Math.min(90, baseline.currentWithinSevenDaysPercent + selectedResourceCount * 4);
   return {
     generatedAt: BASE_NOW,
@@ -958,7 +958,7 @@ function hireBaseline(area = AREA_METRICS.FL) {
 function buildHireCountScenario(area, resourceCountAdded) {
   const baseline = hireBaseline(area);
   const addedWeeklyCapacityHours = resourceCountAdded * 31;
-  const projectedAverageDaysToSchedule = Number(Math.max(1.8, baseline.currentAverageDaysToSchedule - resourceCountAdded * 0.45).toFixed(1));
+  const projectedAverageDaysToSchedule = Number(Math.max(1.8, baseline.currentAverageDaysToSchedule - resourceCountAdded * 0.05).toFixed(2));
   return {
     resourceCountAdded,
     addedWeeklyCapacityHours,
@@ -1005,12 +1005,19 @@ function buildHireForecastSeries(area, resourceCountAdded, projectedAverageDaysT
     NY: [0, 0.12, 0.08, 0.22, 0.3, 0.28, 0.42],
     CA: [0, 0.08, 0.04, 0.16, 0.2, 0.18, 0.28]
   };
-  const selectedImprovementProgress = [0, 0.32, 0.58, 0.72, 0.8, 0.78, 1.0];
+  const stabilizationOffsetsByArea = {
+    FL: [0, -0.08, 0.03, -0.05, 0.06, -0.02, null],
+    TX: [0, -0.04, 0.03, -0.02, 0.04, 0.01, null],
+    GA: [0, -0.03, 0.02, -0.02, 0.03, 0.00, null],
+    NY: [0, -0.03, 0.02, -0.01, 0.03, 0.00, null],
+    CA: [0, -0.02, 0.01, -0.01, 0.02, 0.00, null]
+  };
   const noActionDeltas = noActionDeltasByArea[area.capacityArea] || noActionDeltasByArea.GA;
   const noAction = PERIODS.map((_, index) => Number((current + noActionDeltas[index]).toFixed(2)));
+  const stabilizationOffsets = stabilizationOffsetsByArea[area.capacityArea] || stabilizationOffsetsByArea.GA;
   const selected = PERIODS.map((_, index) => {
-    const improvement = Math.max(0, current - projectedAverageDaysToSchedule) * selectedImprovementProgress[index];
-    return Number(Math.max(projectedAverageDaysToSchedule, current - improvement).toFixed(2));
+    if (index === PERIODS.length - 1) return projectedAverageDaysToSchedule;
+    return Number((current + stabilizationOffsets[index]).toFixed(2));
   });
   selected[selected.length - 1] = projectedAverageDaysToSchedule;
   return {

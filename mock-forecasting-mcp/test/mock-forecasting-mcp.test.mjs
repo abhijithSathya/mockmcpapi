@@ -230,6 +230,8 @@ test("time-to-start impact forecast keeps upward pressure without a straight-lin
   assert.ok(noAction[noAction.length - 1] > noAction[0]);
   assert.ok(hasVariedSlope(noAction));
   assert.ok(hasVariedSlope(selected));
+  assert.ok(Math.max(...selected) - Math.min(...selected) <= 0.25);
+  assert.ok(Math.abs(selected[selected.length - 1] - selected[0]) <= 0.2);
   assert.equal(selected[selected.length - 1], simulation.projectedAverageDaysToSchedule);
 });
 
