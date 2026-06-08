@@ -121,6 +121,7 @@ test("landing candidate limit defaults and caps at top five", async () => {
   assert.equal(defaultResult.filters.limit, 5);
   assert.equal(defaultResult.items.length, 5);
   assert.deepEqual(defaultResult.items.map((item) => item.rank), [1, 2, 3, 4, 5]);
+  assert.equal(defaultResult.items.some((item) => ["HOU", "WAS"].includes(item.capacityArea)), false);
 
   const cappedResult = await callTool("get_workforce_recommendation_candidates", { limit: 9 });
   assert.equal(cappedResult.filters.limit, 5);
@@ -259,6 +260,39 @@ test("metric values require capacity area and return time series", async () => {
       assert.equal(series.actualValues.length, 7);
     }
   }
+});
+
+test("healthy capacity areas return numeric-only metric values and no issue candidates", async () => {
+  resetState();
+  for (const capacityArea of ["HOU", "WAS"]) {
+    const result = await callTool("get_workforce_metric_values", {
+      capacityArea,
+      metricCodes: ["AVERAGE_DAYS_TO_SCHEDULE", "IDLE_HOURS", "IDLE_MINUTES_PER_RESOURCE"],
+      includeTimeSeries: true
+    });
+    assert.equal(result.areaMetrics[0].capacityArea, capacityArea);
+    assert.equal(result.areaMetrics[0].metrics.length, 3);
+    assert.equal(result.timeSeries.length, 3);
+    for (const metric of result.areaMetrics[0].metrics) {
+      assert.equal(typeof metric.currentValue, "number");
+      assert.equal(Object.hasOwn(metric, "observation"), false);
+      assert.equal(Object.hasOwn(metric, "severity"), false);
+      assert.equal(Object.hasOwn(metric, "recommendationText"), false);
+      assert.equal(Object.hasOwn(metric, "targetValue"), false);
+    }
+    for (const series of result.timeSeries) {
+      assert.deepEqual(series.xValues, ["M_MINUS_6", "M_MINUS_5", "M_MINUS_4", "M_MINUS_3", "M_MINUS_2", "M_MINUS_1", "CURRENT"]);
+      assert.equal(series.actualValues.length, 7);
+      assert.equal(series.actualValues.every((value) => typeof value === "number"), true);
+      assert.equal(Object.hasOwn(series, "observation"), false);
+      assert.equal(Object.hasOwn(series, "severity"), false);
+      assert.equal(Object.hasOwn(series, "recommendationText"), false);
+      assert.equal(Object.hasOwn(series, "targetValues"), false);
+    }
+  }
+
+  const candidates = await callTool("get_workforce_recommendation_candidates", { limit: 5 });
+  assert.equal(candidates.items.some((item) => ["HOU", "WAS"].includes(item.capacityArea)), false);
 });
 
 test("hire proposal save persists and search excludes generated prose", async () => {

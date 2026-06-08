@@ -125,6 +125,50 @@ const AREA_METRICS = {
       IDLE_HOURS: [39, 40, 41, 42, 43, 44, 45],
       IDLE_MINUTES_PER_RESOURCE: [25, 26, 27, 28, 29, 30, 31]
     }
+  },
+  HOU: {
+    capacityArea: "HOU",
+    capacityAreaName: "Houston",
+    metrics: {
+      BOOKED_WORKLOAD_HOURS: values("HOURS", 4300, 4280, 4200, 4300, 4400),
+      AVAILABLE_RESOURCE_HOURS_PER_DAY: values("HOURS", 980, 982, 985, 980, 970),
+      AVERAGE_DAYS_TO_SCHEDULE: values("DAYS", 2.1, 2.0, 1.9, 2.1),
+      WITHIN_7_DAYS_PERCENT: values("PERCENT", 91, 92, 93, 91, 88),
+      HIGH_TRAVEL_TIME_ACTIVITY_COUNT: values("COUNT", 18, 17, 16, 18, 25),
+      OVERTIME_HOURS: values("HOURS", 120, 118, 110, 120, 240),
+      FORECAST_WORKLOAD_HOURS: values("HOURS", 19600, 19500, 19400, 19600, 19800),
+      SCHEDULING_RATIO: values("RATIO", 2.1, 2.0, 1.9, 2.1),
+      IDLE_HOURS: values("HOURS", 22, 21, 20, 22),
+      IDLE_MINUTES_PER_RESOURCE: values("MINUTES", 18, 17, 16, 18)
+    },
+    series: {
+      AVERAGE_DAYS_TO_SCHEDULE: [1.9, 2.0, 1.95, 2.05, 2.0, 2.0, 2.1],
+      SCHEDULING_RATIO: [1.9, 2.0, 1.95, 2.05, 2.0, 2.0, 2.1],
+      IDLE_HOURS: [20, 21, 20, 21, 20, 21, 22],
+      IDLE_MINUTES_PER_RESOURCE: [16, 17, 16, 17, 16, 17, 18]
+    }
+  },
+  WAS: {
+    capacityArea: "WAS",
+    capacityAreaName: "Washington",
+    metrics: {
+      BOOKED_WORKLOAD_HOURS: values("HOURS", 4050, 4040, 3980, 4050, 4150),
+      AVAILABLE_RESOURCE_HOURS_PER_DAY: values("HOURS", 940, 942, 945, 940, 930),
+      AVERAGE_DAYS_TO_SCHEDULE: values("DAYS", 2.3, 2.2, 2.0, 2.3),
+      WITHIN_7_DAYS_PERCENT: values("PERCENT", 90, 91, 92, 90, 88),
+      HIGH_TRAVEL_TIME_ACTIVITY_COUNT: values("COUNT", 19, 18, 17, 19, 25),
+      OVERTIME_HOURS: values("HOURS", 135, 130, 120, 135, 240),
+      FORECAST_WORKLOAD_HOURS: values("HOURS", 18800, 18700, 18600, 18800, 19000),
+      SCHEDULING_RATIO: values("RATIO", 2.3, 2.2, 2.0, 2.3),
+      IDLE_HOURS: values("HOURS", 24, 23, 21, 24),
+      IDLE_MINUTES_PER_RESOURCE: values("MINUTES", 20, 19, 17, 20)
+    },
+    series: {
+      AVERAGE_DAYS_TO_SCHEDULE: [2.0, 2.1, 2.05, 2.2, 2.15, 2.2, 2.3],
+      SCHEDULING_RATIO: [2.0, 2.1, 2.05, 2.2, 2.15, 2.2, 2.3],
+      IDLE_HOURS: [21, 22, 21, 22, 23, 23, 24],
+      IDLE_MINUTES_PER_RESOURCE: [17, 18, 17, 18, 19, 19, 20]
+    }
   }
 };
 
