@@ -3,7 +3,7 @@ import { getOpenApiSpec } from "./openapi-spec.mjs";
 const SERVICE_NAME = "forecasting-workforce-mock-api";
 const SERVICE_VERSION = "0.1.0";
 const BASE_NOW = "2026-05-26T10:30:00Z";
-const DATA_VERSION = "forecasting-27a-mock-002";
+const DATA_VERSION = "forecasting-27a-mock-003";
 const PERIODS = ["CURRENT", "PLUS_1_MONTH", "PLUS_2_MONTH", "PLUS_3_MONTH", "PLUS_4_MONTH", "PLUS_5_MONTH", "PLUS_6_MONTH"];
 const LOOKBACK_PERIODS = ["M_MINUS_6", "M_MINUS_5", "M_MINUS_4", "M_MINUS_3", "M_MINUS_2", "M_MINUS_1", "CURRENT"];
 const NO_TARGET_METRIC_CODES = new Set([
@@ -32,7 +32,8 @@ const AREA_METRICS = {
       IDLE_MINUTES_PER_RESOURCE: values("MINUTES", 33, 32, 27, 33)
     },
     series: {
-      AVERAGE_DAYS_TO_SCHEDULE: [4.8, 5, 5.2, 5.4, 5.6, 5.8, 6],
+      AVERAGE_DAYS_TO_SCHEDULE: [4.8, 5.1, 5.0, 5.4, 5.3, 5.8, 6],
+      SCHEDULING_RATIO: [4.8, 5.1, 5.0, 5.4, 5.3, 5.8, 6],
       IDLE_HOURS: [254, 255, 256, 257, 258, 259, 260],
       IDLE_MINUTES_PER_RESOURCE: [27, 28, 29, 30, 31, 32, 33]
     }
@@ -43,17 +44,18 @@ const AREA_METRICS = {
     metrics: {
       BOOKED_WORKLOAD_HOURS: values("HOURS", 4100, 4050, 3900, 4100, 4300),
       AVAILABLE_RESOURCE_HOURS_PER_DAY: values("HOURS", 1180, 1190, 1200, 1180, 1150),
-      AVERAGE_DAYS_TO_SCHEDULE: values("DAYS", 1.8, 1.8, 1.6, 1.8),
+      AVERAGE_DAYS_TO_SCHEDULE: values("DAYS", 1.8, 1.85, 1.6, 1.8),
       WITHIN_7_DAYS_PERCENT: values("PERCENT", 88, 89, 90, 88, 80),
       HIGH_TRAVEL_TIME_ACTIVITY_COUNT: values("COUNT", 21, 19, 18, 21, 25),
       OVERTIME_HOURS: values("HOURS", 160, 155, 150, 160, 250),
       FORECAST_WORKLOAD_HOURS: values("HOURS", 18900, 18700, 18500, 18900, 19000),
-      SCHEDULING_RATIO: values("RATIO", 1.8, 1.8, 1.6, 1.8),
+      SCHEDULING_RATIO: values("RATIO", 1.8, 1.85, 1.6, 1.8),
       IDLE_HOURS: values("HOURS", 65, 64, 59, 65),
       IDLE_MINUTES_PER_RESOURCE: values("MINUTES", 64, 63, 58, 64)
     },
     series: {
-      AVERAGE_DAYS_TO_SCHEDULE: [1.6, 1.6, 1.7, 1.7, 1.8, 1.8, 1.8],
+      AVERAGE_DAYS_TO_SCHEDULE: [1.6, 1.7, 1.65, 1.75, 1.72, 1.85, 1.8],
+      SCHEDULING_RATIO: [1.6, 1.7, 1.65, 1.75, 1.72, 1.85, 1.8],
       IDLE_HOURS: [59, 60, 61, 62, 63, 64, 65],
       IDLE_MINUTES_PER_RESOURCE: [58, 59, 60, 61, 62, 63, 64]
     }
@@ -74,7 +76,8 @@ const AREA_METRICS = {
       IDLE_MINUTES_PER_RESOURCE: values("MINUTES", 38, 37, 32, 38)
     },
     series: {
-      AVERAGE_DAYS_TO_SCHEDULE: [2.3, 2.4, 2.5, 2.6, 2.7, 2.8, 2.9],
+      AVERAGE_DAYS_TO_SCHEDULE: [2.3, 2.45, 2.4, 2.65, 2.6, 2.8, 2.9],
+      SCHEDULING_RATIO: [2.3, 2.45, 2.4, 2.65, 2.6, 2.8, 2.9],
       IDLE_HOURS: [304, 305, 306, 307, 308, 309, 310],
       IDLE_MINUTES_PER_RESOURCE: [32, 33, 34, 35, 36, 37, 38]
     }
@@ -95,7 +98,8 @@ const AREA_METRICS = {
       IDLE_MINUTES_PER_RESOURCE: values("MINUTES", 42, 41, 36, 42)
     },
     series: {
-      AVERAGE_DAYS_TO_SCHEDULE: [2, 2.1, 2.2, 2.3, 2.4, 2.5, 2.6],
+      AVERAGE_DAYS_TO_SCHEDULE: [2, 2.15, 2.1, 2.35, 2.3, 2.5, 2.6],
+      SCHEDULING_RATIO: [2, 2.15, 2.1, 2.35, 2.3, 2.5, 2.6],
       IDLE_HOURS: [174, 175, 176, 177, 178, 179, 180],
       IDLE_MINUTES_PER_RESOURCE: [36, 37, 38, 39, 40, 41, 42]
     }
@@ -116,7 +120,8 @@ const AREA_METRICS = {
       IDLE_MINUTES_PER_RESOURCE: values("MINUTES", 31, 30, 25, 31)
     },
     series: {
-      AVERAGE_DAYS_TO_SCHEDULE: [1.8, 1.9, 2, 2.1, 2.2, 2.3, 2.4],
+      AVERAGE_DAYS_TO_SCHEDULE: [1.8, 2.0, 1.95, 2.15, 2.1, 2.3, 2.4],
+      SCHEDULING_RATIO: [1.8, 2.0, 1.95, 2.15, 2.1, 2.3, 2.4],
       IDLE_HOURS: [39, 40, 41, 42, 43, 44, 45],
       IDLE_MINUTES_PER_RESOURCE: [25, 26, 27, 28, 29, 30, 31]
     }
@@ -993,9 +998,20 @@ function buildHireWorkloadForecast(area, resourceCountAdded) {
 
 function buildHireForecastSeries(area, resourceCountAdded, projectedAverageDaysToSchedule, projectedWithinSevenDaysPercent) {
   const current = area.metrics.AVERAGE_DAYS_TO_SCHEDULE.currentValue;
-  const monthlyIncrease = area.capacityArea === "FL" ? 0.2 : 0.1;
-  const noAction = PERIODS.map((_, index) => Number((current + index * monthlyIncrease).toFixed(1)));
-  const selected = noAction.map((value, index) => Number(Math.max(projectedAverageDaysToSchedule, value - resourceCountAdded * 0.25 * index).toFixed(1)));
+  const noActionDeltasByArea = {
+    FL: [0, 0.3, 0.2, 0.6, 0.8, 0.7, 1.2],
+    TX: [0, 0.15, 0.1, 0.3, 0.45, 0.4, 0.65],
+    GA: [0, 0.15, 0.1, 0.25, 0.35, 0.32, 0.5],
+    NY: [0, 0.12, 0.08, 0.22, 0.3, 0.28, 0.42],
+    CA: [0, 0.08, 0.04, 0.16, 0.2, 0.18, 0.28]
+  };
+  const selectedImprovementProgress = [0, 0.32, 0.58, 0.72, 0.8, 0.78, 1.0];
+  const noActionDeltas = noActionDeltasByArea[area.capacityArea] || noActionDeltasByArea.GA;
+  const noAction = PERIODS.map((_, index) => Number((current + noActionDeltas[index]).toFixed(2)));
+  const selected = PERIODS.map((_, index) => {
+    const improvement = Math.max(0, current - projectedAverageDaysToSchedule) * selectedImprovementProgress[index];
+    return Number(Math.max(projectedAverageDaysToSchedule, current - improvement).toFixed(2));
+  });
   selected[selected.length - 1] = projectedAverageDaysToSchedule;
   return {
     periodCodes: PERIODS,

@@ -2,6 +2,14 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { callTool, handleHttpRequest, resetState } from "../src/mock-mcp-core.mjs";
 
+function monthToMonthDeltas(values) {
+  return values.slice(1).map((value, index) => Number((value - values[index]).toFixed(2)));
+}
+
+function hasVariedSlope(values) {
+  return new Set(monthToMonthDeltas(values).map((value) => value.toFixed(2))).size > 1;
+}
+
 test("lists v4 forecasting workforce tools through MCP", async () => {
   const response = await handleHttpRequest(new Request("http://localhost/mcp", {
     method: "POST",
@@ -76,7 +84,8 @@ test("landing candidates use numeric-only v4 contract", async () => {
   assert.equal(activityStartMetric.currentValue, 6);
   assert.equal(Object.hasOwn(activityStartMetric, "targetValue"), false);
   assert.deepEqual(result.items[0].timeSeriesPreview[0].xValues, ["M_MINUS_6", "M_MINUS_5", "M_MINUS_4", "M_MINUS_3", "M_MINUS_2", "M_MINUS_1", "CURRENT"]);
-  assert.deepEqual(result.items[0].timeSeriesPreview[0].actualValues, [4.8, 5, 5.2, 5.4, 5.6, 5.8, 6]);
+  assert.deepEqual(result.items[0].timeSeriesPreview[0].actualValues, [4.8, 5.1, 5.0, 5.4, 5.3, 5.8, 6]);
+  assert.ok(hasVariedSlope(result.items[0].timeSeriesPreview[0].actualValues));
   assert.equal(Object.hasOwn(result.items[0].timeSeriesPreview[0], "targetValues"), false);
 
   const resourceUnderutilization = result.items.find((item) => item.issueType === "IDLE_TIME");
@@ -100,6 +109,8 @@ test("time-to-start landing candidates expose six-month numeric lookback trend p
     assert.deepEqual(preview.xValues, ["M_MINUS_6", "M_MINUS_5", "M_MINUS_4", "M_MINUS_3", "M_MINUS_2", "M_MINUS_1", "CURRENT"]);
     assert.equal(preview.actualValues.length, 7);
     assert.equal(preview.actualValues.every((value) => typeof value === "number"), true);
+    assert.ok(preview.actualValues[preview.actualValues.length - 1] > preview.actualValues[0]);
+    assert.ok(hasVariedSlope(preview.actualValues));
     assert.equal(Object.hasOwn(preview, "targetValues"), false);
   }
 });
@@ -201,6 +212,25 @@ test("time-to-start landing candidates include numeric seven-day coverage", asyn
     assert.equal(Object.hasOwn(coverage, "observation"), false);
     assert.equal(Object.hasOwn(coverage, "recommendationText"), false);
   }
+});
+
+test("time-to-start impact forecast keeps upward pressure without a straight-line no-action trend", async () => {
+  resetState();
+  const simulation = await callTool("simulate_time_to_start_hire_impact", {
+    capacityArea: "FL",
+    issueType: "TIME_TO_START",
+    selectedOptionIds: ["FL-HIRE-001", "FL-HIRE-002", "FL-HIRE-003"]
+  });
+  const noAction = simulation.forecastSeries.noActionAverageDaysToSchedule;
+  const selected = simulation.forecastSeries.selectedOptionsAverageDaysToSchedule;
+
+  assert.deepEqual(simulation.forecastSeries.periodCodes, ["CURRENT", "PLUS_1_MONTH", "PLUS_2_MONTH", "PLUS_3_MONTH", "PLUS_4_MONTH", "PLUS_5_MONTH", "PLUS_6_MONTH"]);
+  assert.equal(noAction.length, 7);
+  assert.equal(selected.length, 7);
+  assert.ok(noAction[noAction.length - 1] > noAction[0]);
+  assert.ok(hasVariedSlope(noAction));
+  assert.ok(hasVariedSlope(selected));
+  assert.equal(selected[selected.length - 1], simulation.projectedAverageDaysToSchedule);
 });
 
 test("metric values require capacity area and return time series", async () => {
