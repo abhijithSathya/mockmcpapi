@@ -51,6 +51,7 @@ POST /mock/reset
 get_workforce_recommendation_candidates
 get_workforce_metric_values
 get_time_to_start_hire_options
+get_time_to_start_skill_impacts
 simulate_time_to_start_hire_impact
 save_time_to_start_hire_proposal
 search_time_to_start_hire_proposals

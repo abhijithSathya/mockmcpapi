@@ -275,6 +275,13 @@ const TOOL_METADATA = {
     description: "Return numeric hire option data for a time-to-start recommendation.",
     inputSchema: hireSchema({ limit: { type: "integer" }, includeExistingProposals: { type: "boolean" } })
   },
+  get_time_to_start_skill_impacts: {
+    description: "Return numeric required-skill impact data for a time-to-start recommendation.",
+    inputSchema: hireSchema({
+      lookbackMonths: { type: "integer" },
+      limit: { type: "integer" }
+    })
+  },
   simulate_time_to_start_hire_impact: {
     description: "Simulate numeric impact for selected time-to-start hire options.",
     inputSchema: hireSchema({
@@ -339,6 +346,7 @@ const TOOL_HANDLERS = {
   get_workforce_recommendation_candidates: (args) => callApi("/forecasting/workforce/recommendation-candidates", args),
   get_workforce_metric_values: (args) => callApi("/forecasting/workforce/metric-values", args),
   get_time_to_start_hire_options: (args) => callApi("/forecasting/workforce/hire-options", args),
+  get_time_to_start_skill_impacts: (args) => callApi("/forecasting/workforce/hire-skill-impacts", args),
   simulate_time_to_start_hire_impact: (args) => callApi("/forecasting/workforce/hire-simulations", args),
   save_time_to_start_hire_proposal: (args) => callApi("/forecasting/workforce/hire-proposals", args),
   search_time_to_start_hire_proposals: (args) => callApi("/forecasting/workforce/hire-proposals/search", args),

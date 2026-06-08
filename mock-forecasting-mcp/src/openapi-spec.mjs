@@ -17,6 +17,11 @@ const endpointSummaries = [
     summary: "Returns numeric hire option data for a time-to-start recommendation."
   },
   {
+    path: "/forecasting/workforce/hire-skill-impacts",
+    operationId: "get_time_to_start_skill_impacts",
+    summary: "Returns numeric required-skill impact data for a time-to-start recommendation."
+  },
+  {
     path: "/forecasting/workforce/hire-simulations",
     operationId: "simulate_time_to_start_hire_impact",
     summary: "Simulates numeric impact for selected hire options."

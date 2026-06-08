@@ -22,6 +22,7 @@ test("lists v4 forecasting workforce tools through MCP", async () => {
     "create_idle_time_resource_move_batch",
     "get_idle_time_resource_move_options",
     "get_time_to_start_hire_options",
+    "get_time_to_start_skill_impacts",
     "get_workforce_metric_values",
     "get_workforce_recommendation_candidates",
     "save_time_to_start_hire_proposal",
@@ -213,6 +214,58 @@ test("time-to-start landing candidates include numeric seven-day coverage", asyn
     assert.equal(Object.hasOwn(coverage, "observation"), false);
     assert.equal(Object.hasOwn(coverage, "recommendationText"), false);
   }
+});
+
+test("time-to-start skill impacts return requested area numeric-only required skill rows", async () => {
+  resetState();
+  const areaDeltas = {
+    FL: 1.2,
+    TX: 0.6,
+    GA: 0.6
+  };
+
+  for (const capacityArea of ["FL", "TX", "GA"]) {
+    const result = await callTool("get_time_to_start_skill_impacts", {
+      capacityArea,
+      issueType: "TIME_TO_START",
+      recommendationId: `REC-${capacityArea}-TTS-0001`,
+      lookbackMonths: 6,
+      limit: 3
+    });
+
+    assert.equal(result.capacityArea, capacityArea);
+    assert.equal(result.issueType, "TIME_TO_START");
+    assert.equal(result.metricCode, "AVERAGE_DAYS_TO_SCHEDULE");
+    assert.equal(result.lookbackMonths, 6);
+    assert.equal(result.items.length, 3);
+    assert.equal(Object.hasOwn(result, "observation"), false);
+    assert.equal(Object.hasOwn(result, "recommendation"), false);
+    assert.equal(Object.hasOwn(result, "severity"), false);
+    assert.equal(Object.hasOwn(result, "summary"), false);
+    assert.equal(Object.hasOwn(result, "chartConfig"), false);
+
+    for (const item of result.items) {
+      assert.equal(typeof item.rank, "number");
+      assert.equal(typeof item.skillCode, "string");
+      assert.equal(typeof item.lookbackStartValue, "number");
+      assert.equal(typeof item.currentValue, "number");
+      assert.equal(typeof item.deltaValue, "number");
+      assert.deepEqual(item.periodCodes, ["M_MINUS_6", "M_MINUS_5", "M_MINUS_4", "M_MINUS_3", "M_MINUS_2", "M_MINUS_1", "CURRENT"]);
+      assert.equal(item.values.length, 7);
+      assert.equal(item.values.every((value) => typeof value === "number"), true);
+      assert.ok(item.deltaValue > 0);
+      assert.ok(item.deltaValue <= areaDeltas[capacityArea]);
+      assert.equal(Object.hasOwn(item, "observation"), false);
+      assert.equal(Object.hasOwn(item, "recommendationText"), false);
+      assert.equal(Object.hasOwn(item, "severity"), false);
+      assert.equal(Object.hasOwn(item, "summary"), false);
+      assert.equal(Object.hasOwn(item, "chartConfig"), false);
+    }
+  }
+
+  const florida = await callTool("get_time_to_start_skill_impacts", { capacityArea: "FL", issueType: "TIME_TO_START", limit: 2 });
+  assert.equal(florida.capacityArea, "FL");
+  assert.equal(florida.items.length, 2);
 });
 
 test("time-to-start impact forecast keeps upward pressure without a straight-line no-action trend", async () => {

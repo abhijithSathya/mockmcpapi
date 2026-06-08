@@ -268,6 +268,51 @@ const HIRE_OPTIONS = [
   }
 ];
 
+const HIRE_SKILL_IMPACTS = {
+  FL: [
+    {
+      skillCode: "APPLIANCE_REPAIR",
+      values: [4.9, 5.1, 5.05, 5.35, 5.3, 5.7, 5.95]
+    },
+    {
+      skillCode: "HVAC_SERVICE",
+      values: [4.8, 5.0, 4.95, 5.25, 5.2, 5.55, 5.75]
+    },
+    {
+      skillCode: "PLUMBING",
+      values: [4.7, 4.9, 4.85, 5.1, 5.05, 5.35, 5.5]
+    }
+  ],
+  TX: [
+    {
+      skillCode: "APPLIANCE_REPAIR",
+      values: [2.35, 2.48, 2.43, 2.66, 2.62, 2.78, 2.9]
+    },
+    {
+      skillCode: "HVAC_SERVICE",
+      values: [2.3, 2.42, 2.38, 2.58, 2.55, 2.72, 2.82]
+    },
+    {
+      skillCode: "PLUMBING",
+      values: [2.25, 2.38, 2.33, 2.52, 2.5, 2.64, 2.72]
+    }
+  ],
+  GA: [
+    {
+      skillCode: "APPLIANCE_REPAIR",
+      values: [2.05, 2.18, 2.14, 2.36, 2.32, 2.49, 2.58]
+    },
+    {
+      skillCode: "HVAC_SERVICE",
+      values: [2.0, 2.12, 2.08, 2.28, 2.25, 2.4, 2.48]
+    },
+    {
+      skillCode: "PLUMBING",
+      values: [1.95, 2.05, 2.02, 2.2, 2.18, 2.3, 2.38]
+    }
+  ]
+};
+
 const MOVE_OPTIONS = [
   {
     optionId: "CA-MOVE-001",
@@ -398,6 +443,7 @@ export async function handleHttpRequest(request, env = {}) {
           "POST /forecasting/workforce/recommendation-candidates",
           "POST /forecasting/workforce/metric-values",
           "POST /forecasting/workforce/hire-options",
+          "POST /forecasting/workforce/hire-skill-impacts",
           "POST /forecasting/workforce/hire-simulations",
           "POST /forecasting/workforce/hire-proposals",
           "POST /forecasting/workforce/hire-proposals/search",
@@ -425,6 +471,8 @@ export async function handleHttpRequest(request, env = {}) {
         return responseJson(getMetricValues(body));
       case "/forecasting/workforce/hire-options":
         return responseJson(getHireOptions(body));
+      case "/forecasting/workforce/hire-skill-impacts":
+        return responseJson(getHireSkillImpacts(body));
       case "/forecasting/workforce/hire-simulations":
         return responseJson(simulateHireImpact(body));
       case "/forecasting/workforce/hire-proposals":
@@ -517,6 +565,43 @@ function getHireOptions(args = {}) {
     options: options.slice(0, limit).map(clone),
     existingProposalRefs: args.includeExistingProposals === false ? [] : state.hireProposals.map(proposalRef),
     versionToken: `hire-options-${area.capacityArea}-v1`
+  };
+}
+
+function getHireSkillImpacts(args = {}) {
+  const area = requireHire(args);
+  const limit = clamp(Number(args.limit || 3), 1, 3);
+  const lookbackMonths = Number(args.lookbackMonths || 6);
+  const overallMetric = area.metrics.AVERAGE_DAYS_TO_SCHEDULE;
+  const areaDelta = Number((overallMetric.currentValue - overallMetric.lookbackStartValue).toFixed(2));
+  const items = (HIRE_SKILL_IMPACTS[area.capacityArea] || [])
+    .map((item) => {
+      const values = item.values.map((value) => Number(value));
+      const lookbackStartValue = values[0];
+      const currentValue = values[values.length - 1];
+      const deltaValue = Number((currentValue - lookbackStartValue).toFixed(2));
+      return {
+        skillCode: item.skillCode,
+        lookbackStartValue,
+        currentValue,
+        deltaValue: Math.min(deltaValue, areaDelta),
+        periodCodes: LOOKBACK_PERIODS.slice(-values.length),
+        values
+      };
+    })
+    .sort((left, right) => Number(right.deltaValue || 0) - Number(left.deltaValue || 0))
+    .slice(0, limit)
+    .map((item, index) => ({ rank: index + 1, ...item }));
+  return {
+    generatedAt: BASE_NOW,
+    dataVersion: DATA_VERSION,
+    recommendationId: args.recommendationId || recommendationIdFor(area.capacityArea, "TIME_TO_START"),
+    capacityArea: area.capacityArea,
+    issueType: "TIME_TO_START",
+    metricCode: "AVERAGE_DAYS_TO_SCHEDULE",
+    lookbackMonths,
+    items,
+    versionToken: `hire-skill-impacts-${area.capacityArea}-v1`
   };
 }
 
